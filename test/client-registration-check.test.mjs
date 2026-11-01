@@ -40,7 +40,7 @@ test("a copy of the package passes", () => {
 	try {
 		const result = runCheck(scratch);
 		assert.equal(result.status, 0, result.stderr);
-		assert.match(result.stdout, /ok — .*registers "@ryuu-64\/dsh-find-all"/);
+		assert.match(result.stdout, /ok — .*registers "@guojing6\/dsh-find-all"/);
 	} finally {
 		rmSync(scratch, { recursive: true, force: true });
 	}

@@ -1,6 +1,6 @@
 {
-  "name": "@ryuu-64/dsh-find-all",
-  "version": "0.2.3",
+  "name": "@guojing6/dsh-find-all",
+  "version": "0.3.0",
   "description": "Find saved conversation text across DeepSeek Harness (DSH), with Ctrl+F / Cmd+F inside a conversation.",
   "type": "module",
   "license": "MIT",
@@ -19,17 +19,18 @@
     "docs/compatibility.md",
     "LICENSE"
   ],
-  "author": "Ryuu-64",
+  "author": "guojing6",
   "contributors": [
+    "Ryuu-64 (dsh-find-all upstream, MIT)",
     "secyborg (upstream dsh-find-bar, MIT)"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Ryuu-64/dsh-find-all.git"
+    "url": "git+https://github.com/guojing6/dsh-find-all.git"
   },
-  "homepage": "https://github.com/Ryuu-64/dsh-find-all#readme",
+  "homepage": "https://github.com/guojing6/dsh-find-all#readme",
   "bugs": {
-    "url": "https://github.com/Ryuu-64/dsh-find-all/issues"
+    "url": "https://github.com/guojing6/dsh-find-all/issues"
   },
   "publishConfig": {
     "access": "public",

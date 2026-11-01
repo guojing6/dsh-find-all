@@ -11,7 +11,7 @@
 //   __ModuleLoader__.load
 //
 // The fork shipped `id: "dsh-find-all"` (the unscoped name) while the package is
-// `@ryuu-64/dsh-find-all`, so the GUI reported "Failed to load plugins" for a
+// the scoped package name, so the GUI reported "Failed to load plugins" for a
 // bundle that had in fact loaded fine.
 //
 // `package.json` is the single source of truth: the expected id is read from it

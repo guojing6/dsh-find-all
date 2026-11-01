@@ -50,7 +50,7 @@ var BAR_ID = "dsh-find-all-root";
 			copyDiagnostics: "复制诊断信息", copyingDiagnostics: "正在复制…", copiedDiagnostics: "诊断信息已复制，可粘贴到“反馈问题”中", copyDiagnosticsFailed: "复制失败，请重试",
 			currentVersion: "当前版本", checkUpdate: "检查更新", checkingUpdate: "正在检查…", updateSource: "从公共 npm 检查更新", updateCurrent: "已是最新版本", updateAhead: "当前版本比已发布版本更新", updateAvailable: "有新版本 {v}", updateFailed: "检查失败，请重试", updateGuide: "查看更新说明",
             about: "关于", aboutUnavailable: "当前宿主无法显示关于对话框", aboutClose: "关闭关于", aboutDescription: "在 DSH Desktop 中搜索当前会话的已保存历史，并跳转到原聊天位置。",
-            aboutAuthor: "作者", aboutSupport: "支持与交流", aboutRepository: "源码与说明", aboutGroup: "QQ 交流群", aboutCopy: "复制群号", aboutCopying: "正在复制…", aboutCopied: "群号已复制", aboutCopyFailed: "复制失败，请手动复制群号", aboutCredits: "致谢与许可", aboutUpstream: "基于 secyborg/dsh-find-bar 开发，感谢 secyborg 提供原始查找功能。", aboutNotices: "完整致谢与第三方许可",
+            aboutAuthor: "作者", aboutSupport: "支持与交流", aboutRepository: "源码与说明", aboutGroup: "QQ 交流群", aboutCopy: "复制群号", aboutCopying: "正在复制…", aboutCopied: "群号已复制", aboutCopyFailed: "复制失败，请手动复制群号", aboutCredits: "致谢与许可", aboutUpstream: "基于 Ryuu-64 的 dsh-find-all 开发（上游为 secyborg/dsh-find-bar），感谢两位原作者。", aboutNotices: "完整致谢与第三方许可",
             feedbackIssue: "反馈问题（GitHub）", feedbackPrivacy: "需 GitHub 账号；提交后公开。请粘贴诊断信息并说明复现步骤。",
 			refreshUnavailable: "完整会话范围下可重新读取历史",
 			contentButtonLabel: "搜索选项；{scope}；已选择 {n} 种内容{changed}",
@@ -95,7 +95,7 @@ var BAR_ID = "dsh-find-all-root";
 			copyDiagnostics: "Copy diagnostics", copyingDiagnostics: "Copying…", copiedDiagnostics: "Diagnostics copied. Paste them into Report an issue", copyDiagnosticsFailed: "Copy failed. Try again",
 			currentVersion: "Current version", checkUpdate: "Check for updates", checkingUpdate: "Checking…", updateSource: "Check the public npm registry", updateCurrent: "You’re up to date", updateAhead: "Current version is newer than the published version", updateAvailable: "Version {v} is available", updateFailed: "Check failed. Try again", updateGuide: "View update instructions",
             about: "About", aboutUnavailable: "This host cannot display the About dialog", aboutClose: "Close About", aboutDescription: "Search the current conversation’s saved history in DSH Desktop and jump to the original messages.",
-            aboutAuthor: "Author", aboutSupport: "Support and community", aboutRepository: "Source and documentation", aboutGroup: "QQ group", aboutCopy: "Copy group number", aboutCopying: "Copying…", aboutCopied: "Group number copied", aboutCopyFailed: "Copy failed. Copy the group number manually", aboutCredits: "Credits and license", aboutUpstream: "Based on secyborg/dsh-find-bar. Thanks to secyborg for the original find functionality.", aboutNotices: "Full credits and third-party licenses",
+            aboutAuthor: "Author", aboutSupport: "Support and community", aboutRepository: "Source and documentation", aboutGroup: "QQ group", aboutCopy: "Copy group number", aboutCopying: "Copying…", aboutCopied: "Group number copied", aboutCopyFailed: "Copy failed. Copy the group number manually", aboutCredits: "Credits and license", aboutUpstream: "Based on Ryuu-64’s dsh-find-all, which derives from secyborg/dsh-find-bar. Thanks to both authors.", aboutNotices: "Full credits and third-party licenses",
             feedbackIssue: "Report an issue (GitHub)", feedbackPrivacy: "GitHub account required; submitted issues are public. Paste diagnostics and describe the steps to reproduce.",
 			refreshUnavailable: "Refresh is available for Whole conversation",
 			contentButtonLabel: "Search options; {scope}; {n} content types selected{changed}",
@@ -2570,7 +2570,7 @@ var BAR_ID = "dsh-find-all-root";
             updateStatus.setAttribute('aria-atomic', 'true');
             var updateGuide = document.createElement('a');
             updateGuide.className = 'feedback-issue'; updateGuide.textContent = L.updateGuide;
-            updateGuide.href = 'https://github.com/Ryuu-64/dsh-find-all#更新';
+            updateGuide.href = 'https://github.com/guojing6/dsh-find-all#更新';
             updateGuide.target = '_blank'; updateGuide.rel = 'noopener noreferrer';
             updateGuide.hidden = true;
             updateCommand.append(currentVersion, updateBtn, updateSource, updateStatus, updateGuide);
@@ -2588,7 +2588,7 @@ var BAR_ID = "dsh-find-all-root";
             diagnosticFeedback.setAttribute('role', 'status');
             var feedbackIssue = document.createElement('a');
             feedbackIssue.className = 'feedback-issue'; feedbackIssue.textContent = L.feedbackIssue;
-            feedbackIssue.href = 'https://github.com/Ryuu-64/dsh-find-all/issues/new';
+            feedbackIssue.href = 'https://github.com/guojing6/dsh-find-all/issues/new';
             feedbackIssue.target = '_blank'; feedbackIssue.rel = 'noopener noreferrer';
             feedbackIssue.appendChild(icon('M14 3h7v7M21 3l-9 9M10 5H5v14h14v-5', 14));
             var feedbackPrivacy = document.createElement('p');
@@ -2777,13 +2777,13 @@ var BAR_ID = "dsh-find-all-root";
                     if (state.mounted && state.aboutOwner === owner && state.aboutEpoch === epoch) setCopyStatus(copied ? 'copied' : 'failed');
                 }
                 function link(label, href) { return react.createElement('a', { href: href, target: '_blank', rel: 'noopener noreferrer' }, label); }
-                var repository = 'https://github.com/Ryuu-64/dsh-find-all';
+                var repository = 'https://github.com/guojing6/dsh-find-all';
                 return react.createElement(ui.Modal, {
                     open: true, onClose: requestClose, title: 'dsh-find-all',
                     closeLabel: L.aboutClose, description: L.aboutDescription,
                     className: 'dsh-find-all-about', contentClassName: 'dsh-find-all-about-content'
                 }, react.createElement('div', { ref: details, className: 'dsh-find-all-about-details' },
-                    react.createElement('p', null, L.aboutAuthor + ': ', link('Ryuu-64', 'https://github.com/Ryuu-64')),
+                    react.createElement('p', null, L.aboutAuthor + ': ', link('guojing6', 'https://github.com/guojing6')),
                     react.createElement('section', null,
                         react.createElement('h3', null, L.aboutSupport),
                         react.createElement('div', { className: 'dsh-find-all-about-links' }, link(L.feedbackIssue, repository + '/issues/new'), link(L.aboutRepository, repository)),

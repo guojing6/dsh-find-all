@@ -22,7 +22,7 @@
 
 相对上游快照 `ce7eb75`，本仓库改动如下（原上游功能一律保留）：
 
-1. 插件的名称与 cordis 行 id：`dsh-find-bar` → `dsh-find-all`（npm 包名：`@ryuu-64/dsh-find-all`）；
+1. 插件的名称与 cordis 行 id：`dsh-find-bar` → `dsh-find-all`（npm 包名：`@guojing6/dsh-find-all`）；
 2. **新增完整会话搜索**：通过正式 `ctx.remote.session.follow/page` 接口读取固定截点的已保存历史，验证事件序号连续覆盖，在内存文字上搜索，并在选择命中时按需定位原聊天；
 3. 新增范围切换（`完整会话` / `已加载内容`）、读取与扫描进度（含点击停止）、独立结果展示上限与会话切换时的状态重置；
 4. `test/find-logic.test.mjs` 由上游测试改写为 `node:test` 并扩充：新增匹配器、键盘路由与分页状态机的 19 项用例；

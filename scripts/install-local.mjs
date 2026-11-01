@@ -27,7 +27,7 @@ import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const PACKAGE = "@ryuu-64/dsh-find-all";
+const PACKAGE = "@guojing6/dsh-find-all";
 const REPO_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const CHECK = join(REPO_ROOT, "scripts", "check-client-registration.mjs");
 const pkg = JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8"));

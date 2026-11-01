@@ -46,13 +46,13 @@ dialogs are unaffected.
 - `node scripts/build-client.mjs --check`: reproducible bundle from `src/`.
 - `node --test "test/**/*.test.mjs"`: **140 passed, 0 failed**.
 - `scripts/check-client-registration.mjs`: the bundle registers
-  `@ryuu-64/dsh-find-all`.
+  `@guojing6/dsh-find-all`.
 - Production client bundle SHA-256:
-  `62f8c0cc748b90081bb7a58ce04029856d019524613e89236f72ceb95c39007d`.
+  `787acfef85030be435a00b96837549f2e2204154971ca30a311d398eedcd6d4d`.
 - Isolated official `0.2.1-rc.5` Web profile (`DSH_HOME` under a temporary
   directory, bundled Desktop runtime commit `d4db512`):
-  `dsh plugin --profile web add <candidate.tgz>` installed `0.2.3`, and
-  `window.__DSH_BOOT__` listed `@ryuu-64/dsh-find-all`.
+  `dsh plugin --profile web add <candidate.tgz>` installed `@guojing6/dsh-find-all@0.3.0`, and
+  `window.__DSH_BOOT__` listed `@guojing6/dsh-find-all`.
 - Real Chrome run on that profile:
   - the Workspaces header shows the plugin entry in the Host search icon's
     box (28×28); the Host `搜索会话` button is hidden and the old

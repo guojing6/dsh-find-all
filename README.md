@@ -11,7 +11,7 @@ DeepSeek Harness（DSH）的对话查找插件。搜索各工作区对话的标�
 ## 安装
 
 1. 打开 DSH 的「插件」→「添加插件」。
-2. 输入 `@ryuu-64/dsh-find-all`，安装并启用。
+2. 输入 `@guojing6/dsh-find-all`，安装并启用。
 3. 重启 DSH（网页版需重启服务并刷新页面）。
 
 如果装过 `dsh-find-bar`，请先卸载，避免快捷键冲突。`0.2.0` 只支持官方 DSH `0.2.1-rc.5`：四个宿主依赖都只声明这一版本，旧版本会被安装门禁拒绝。实测范围见[兼容说明](docs/compatibility.md)。
@@ -63,13 +63,13 @@ DeepSeek Harness（DSH）的对话查找插件。搜索各工作区对话的标�
 
 ## 反馈与交流
 
-遇到问题请[到 GitHub 反馈](https://github.com/Ryuu-64/dsh-find-all/issues/new)，说明你做了什么、遇到什么问题，附上必要截图。可点 `⋯` →「复制诊断信息」后粘贴到反馈中。不要公开密钥或私密对话。
+遇到问题请[到 GitHub 反馈](https://github.com/guojing6/dsh-find-all/issues/new)，说明你做了什么、遇到什么问题，附上必要截图。可点 `⋯` →「复制诊断信息」后粘贴到反馈中。不要公开密钥或私密对话。
 
 QQ 交流群：**1129212995**。需要跟进的问题请到 GitHub 反馈。
 
 ## 作者与致谢
 
-由 [Ryuu-64](https://github.com/Ryuu-64) 维护，基于 [secyborg/dsh-find-bar](https://github.com/secyborg/dsh-find-bar) 开发，感谢 secyborg 的原作。
+由 [guojing6](https://github.com/guojing6) 维护；基于 [Ryuu-64 的 dsh-find-all](https://github.com/Ryuu-64/dsh-find-all) 开发，其上游为 [secyborg/dsh-find-bar](https://github.com/secyborg/dsh-find-bar)。感谢两位原作者。
 
 [MIT 许可](LICENSE)：Copyright (c) 2026 secyborg / Copyright (c) 2026 Ryuu-64。
 上游 README 见 [README.fork-origin.md](README.fork-origin.md)，改动与致谢见 [NOTICE.md](NOTICE.md)。

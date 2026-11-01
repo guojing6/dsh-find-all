@@ -1,4 +1,4 @@
-// Deploy a published @ryuu-64/dsh-find-all into the DSH desktop profile, and
+// Deploy a published @guojing6/dsh-find-all into the DSH desktop profile, and
 // prove every link of the chain on the way through.
 //
 // Why a script instead of three manual steps: the 0.1.0 defect is invisible to
@@ -31,7 +31,7 @@ import { homedir, tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const PACKAGE = "@ryuu-64/dsh-find-all";
+const PACKAGE = "@guojing6/dsh-find-all";
 const REPO_ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const CHECK = join(REPO_ROOT, "scripts", "check-client-registration.mjs");
 const LAST_STEP = 5;

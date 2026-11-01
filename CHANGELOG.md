@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+
+- Rename the package to `@guojing6/dsh-find-all` (from `@ryuu-64/dsh-find-all`). The client bundle now registers under the new package name; the profile/Cordis row, update check, issue link and About dialog follow it. Rebuilt bundle SHA-256 `787acfef85030be435a00b96837549f2e2204154971ca30a311d398eedcd6d4d`; 140 tests pass.
+- Repository and feedback links now point at `guojing6/dsh-find-all`; upstream credits for Ryuu-64 and secyborg remain in NOTICE, LICENSE and the About dialog.
+- Because DSH keys the boot graph by package name, the old `@ryuu-64/dsh-find-all` entry must be removed before installing this version.
+- Verify on an isolated official `0.2.1-rc.5` Web profile: the profile installs `@guojing6/dsh-find-all@0.3.0`, the boot graph lists the new id and no old id, and the header entry, `Ctrl+K` and cross-conversation search pass without console errors.
+
 ## 0.2.3
 
 - Fix `Ctrl+K` / `Cmd+K` in the packaged Desktop app: the Electron shell consumes matched shortcut chords before the page and dispatches the Host `session.search` command, so a page-level key listener never ran.

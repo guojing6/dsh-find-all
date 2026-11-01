@@ -1,7 +1,7 @@
 import SemVer from 'semver/classes/semver.js';
 
-const PACKAGE = '@ryuu-64/dsh-find-all';
-const ENDPOINT = 'https://registry.npmjs.org/@ryuu-64%2fdsh-find-all/latest';
+const PACKAGE = '@guojing6/dsh-find-all';
+const ENDPOINT = 'https://registry.npmjs.org/@guojing6%2fdsh-find-all/latest';
 
 function version(value) {
     if (typeof value !== 'string') throw new Error('Invalid version');
