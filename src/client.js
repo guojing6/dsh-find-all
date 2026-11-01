@@ -287,7 +287,7 @@ var BAR_ID = "dsh-find-all-root";
                 // owned card is top-aligned: the search field must not jump as rows arrive.
                 ".dsh-find-all-conversations{width:min(680px,100%);align-self:flex-start;max-height:100%;min-width:0;padding:0;gap:0;font-family:var(--dsw-font-family)}" +
                 ".dsh-find-all-conversations-layout{display:flex;flex-direction:column;min-width:0;min-height:0;flex:1;width:100%;max-width:100%;overflow-y:auto;overflow-x:hidden}.dsh-find-all-conversations-header{display:flex;align-items:center;gap:8px;flex:none;min-width:0;padding:16px 16px 8px}.dsh-find-all-conversations-input{flex:1;min-width:0;box-sizing:border-box}.dsh-find-all-conversations-close{flex:none;width:28px;padding:0;color:var(--dsw-alias-label-secondary)}" +
-                ".dsh-find-all-conversations-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 12px;flex:none;min-width:0;padding:0 16px 10px;border-bottom:.5px solid var(--dsw-alias-border-l1)}.dsh-find-all-conversations-scope{min-width:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}.dsh-find-all-conversations-options{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin-left:auto;min-width:0;max-width:100%}.dsh-find-all-conversations-title-only{flex:none;font-size:12px;line-height:18px;white-space:nowrap}.dsh-find-all-conversations-title-only-fallback{display:inline-flex;align-items:center;gap:6px}.dsh-find-all-conversations-title-only-fallback input{margin:0;accent-color:var(--dsw-alias-brand-primary)}" +
+                ".dsh-find-all-conversations-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 12px;flex:none;min-width:0;padding:0 16px 10px;border-bottom:.5px solid var(--dsw-alias-border-l1)}.dsh-find-all-conversations-scope{min-width:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-tertiary);overflow-wrap:anywhere}.dsh-find-all-conversations-options{display:flex;align-items:center;flex-wrap:wrap;gap:6px 12px;margin-left:auto;min-width:0;max-width:100%}.dsh-find-all-conversations-title-only{flex:none;font-size:12px;line-height:18px;white-space:nowrap}" +
                 ".dsh-find-all-conversations-list{display:flex;flex-direction:column;flex:0 1 auto;min-height:0;min-width:0;max-width:100%;max-height:416px;box-sizing:border-box;padding:4px 8px;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}.dsh-find-all-conversations-empty{padding:16px 8px;font-size:13px;line-height:20px;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere}" +
                 ".dsh-find-all-conversations-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 8px;flex:none;min-height:0;max-height:35%;padding:8px 12px;border-top:.5px solid var(--dsw-alias-border-l1);overflow-y:auto;overflow-x:hidden}.dsh-find-all-conversations-status-actions{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;flex:1;min-width:0}.dsh-find-all-conversations-status{margin:0;min-width:0;font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere}.dsh-find-all-conversations-status:empty{display:none}.dsh-find-all-conversations-actions{display:flex;gap:4px;flex-wrap:wrap}.dsh-find-all-conversations-help{flex:none;margin-left:auto;color:var(--dsw-alias-label-tertiary)}" +
                 ".dsh-find-all-conversations-help-content{flex:0 1 auto;min-height:0;max-height:160px;padding:0 16px 12px;overflow-y:auto;font-size:12px;line-height:18px;color:var(--dsw-alias-label-secondary);overflow-wrap:anywhere}.dsh-find-all-conversations-help-content[hidden]{display:none}.dsh-find-all-conversations-help-content p{margin:6px 0 0}.dsh-find-all-conversations-match{color:inherit;background:var(--dsw-alias-state-business-tertiary);font-weight:600}" +
@@ -341,59 +341,11 @@ var BAR_ID = "dsh-find-all-root";
 		}
 
 		// MessageIconActions is host chrome: copy/branch controls, Turn usage and
-		// the local clock. It must never change the conversation result set merely
-		// because hover/focus changes its opacity. Current hosts expose data-clock
-		// on that row. The structural fallback is limited to the four admitted
-		// pre-data-clock hosts, whose official MessageItem/TurnTailNodeView sources
-		// render the same icon-only copy action in the verified positions below.
-		function legacyMessageActionRows(root) {
-			var rows = new Set();
-			if (!root) return rows;
-			function includeRoot(selector, into) {
-				if (root.nodeType === 1 && root.matches && root.matches(selector)) into.push(root);
-				var descendants = root.querySelectorAll ? root.querySelectorAll(selector) : [];
-				for (var i = 0; i < descendants.length; i++) into.push(descendants[i]);
-				return into;
-			}
-			var markedSelector = '[data-clock="start"],[data-clock="end"]';
-			if ((root.nodeType === 1 && root.matches && root.matches(markedSelector)) ||
-				(root.querySelector && root.querySelector(markedSelector))) return rows;
-
-			function containsIconOnlyAction(element) {
-				if (!element || !element.querySelectorAll) return false;
-				var buttons = element.querySelectorAll('button[type="button"][aria-label]');
-				for (var j = 0; j < buttons.length; j++) {
-					if (buttons[j].querySelector("svg") && !(buttons[j].textContent || "").trim()) return true;
-				}
-				return false;
-			}
-
-			var tails = includeRoot("[data-turn-tail]", []);
-			for (var i = 0; i < tails.length; i++) {
-				var tailAction = tails[i].lastElementChild;
-				if (containsIconOnlyAction(tailAction)) rows.add(tailAction);
-			}
-
-			var flows = includeRoot('[data-chat-flow-kind="user"],[data-chat-flow-kind="steering"]', []);
-			for (i = 0; i < flows.length; i++) {
-				var buttons = flows[i].querySelectorAll('button[type="button"][aria-label]');
-				for (var j = 0; j < buttons.length; j++) {
-					if (!buttons[j].querySelector("svg") || (buttons[j].textContent || "").trim()) continue;
-					var candidate = null;
-					for (var node = buttons[j].parentElement; node && node !== flows[i]; node = node.parentElement) {
-						var parent = node.parentElement;
-						if (parent && parent !== flows[i] && parent.children.length === 2 &&
-							node === parent.lastElementChild && node.previousElementSibling) candidate = node;
-					}
-					if (candidate) { rows.add(candidate); break; }
-				}
-			}
-			return rows;
-		}
-
-		function messageActionRow(node, legacyRows) {
+		// the local clock. The current host marks that row with data-clock, so it
+		// never contributes to the conversation text.
+		function messageActionRow(node) {
 			var clock = node.getAttribute && node.getAttribute("data-clock");
-			return clock === "start" || clock === "end" || legacyRows.has(node);
+			return clock === "start" || clock === "end";
 		}
 
 		// Join inline Text nodes only within one structural block and DOM root.
@@ -401,7 +353,6 @@ var BAR_ID = "dsh-find-all-root";
 		// including whitespace-only nodes and code newlines; never trim or pad.
 		function collectTextBlocks(root, classify) {
 			var blocks = [];
-			var legacyActions = legacyMessageActionRows(root);
 			var text = "";
 			var segments = [];
 			function flush() {
@@ -418,7 +369,7 @@ var BAR_ID = "dsh-find-all-root";
 					return;
 				}
 				if (node.nodeType !== 1 && node.nodeType !== 11) return;
-				if (SKIP_TAGS[node.tagName] || node.id === BAR_ID || node.hasAttribute?.("data-find-projection-chrome") || messageActionRow(node, legacyActions) || node.tagName === "BR") {
+				if (SKIP_TAGS[node.tagName] || node.id === BAR_ID || node.hasAttribute?.("data-find-projection-chrome") || messageActionRow(node) || node.tagName === "BR") {
 					// Excluded subtrees and br are hard boundaries, not empty text.
 					flush();
 					return;
@@ -620,9 +571,9 @@ var BAR_ID = "dsh-find-all-root";
 			var scrolls = panel.querySelectorAll('[data-conversation-scroll]');
 			if (scrolls.length !== 1) return null;
 			var content = scrolls[0].closest('[data-conversation-content]');
-			// 0.1.6-alpha.2 has the content wrapper but no identity attribute.
-			// Identity still comes from the unique session-scoped header anchor.
-			if (content && content.hasAttribute('data-conversation-session') && content.getAttribute('data-conversation-session') !== sessionId) return null;
+			// The current host identifies the content wrapper by Session; the unique
+			// Session-scoped header anchor remains a second check.
+			if (!content || content.getAttribute('data-conversation-session') !== sessionId) return null;
 			var flows = Array.prototype.filter.call(scrolls[0].querySelectorAll('[data-chat-flow]'), function (flow) {
 				return !nestedProcessFlow(flow);
 			});
@@ -710,7 +661,7 @@ var BAR_ID = "dsh-find-all-root";
 			};
 		}
 
-		// RC2's rendered Turn controls call its navigation owner, including
+		// The rendered Turn controls call the host's navigation owner, including
 		// cancelling a retained paging anchor. Use that actual loaded UI action;
 		// never synthesize wheel/beforematch or import a private Chat controller.
 		function hostNavigationReady(target, face) {
@@ -865,7 +816,7 @@ var BAR_ID = "dsh-find-all-root";
 
         function verticalTextClip(element, style, box) {
             var top=box.top+element.clientTop,bottom=top+element.clientHeight;
-            // Official RC2 capped process bodies paint 24px edge fades.
+            // The official capped process bodies paint 24px edge fades.
             if(state.scope==='whole'&&element.hasAttribute('data-step-process-body')&&style.maskImage&&style.maskImage!=='none'){
                 if(element.scrollTop>1)top+=24;
                 if(element.scrollTop+element.clientHeight<element.scrollHeight-1)bottom-=24;
@@ -1081,7 +1032,7 @@ var BAR_ID = "dsh-find-all-root";
                         // Resolve the source and geometry again next tick.
                         previous = null; stable = 0; retry(); return;
                     }
-                    // RC2 omits the rail for one turn and virtualizes its marks.
+                    // The host omits the rail for one turn and virtualizes its marks.
                     // A missing exact control cannot prove an ownership handoff.
                     // Try direct placement once; any reversal fails without a fight.
                     directAttempted = true;
@@ -1976,7 +1927,7 @@ var BAR_ID = "dsh-find-all-root";
 		}
 
 		// The code content wrapper survives the host's plain-pre -> Shiki tree
-		// swap (0.2.0-rc.2 CodeBlock). Otherwise use the nearest block boundary.
+		// swap. Otherwise use the nearest block boundary.
 		function selectionBlock(range, root) {
 			var nearest = null;
 			for (var node = range.startContainer.parentNode; node; node = node.parentNode) {
@@ -2769,12 +2720,12 @@ var BAR_ID = "dsh-find-all-root";
 			var react = require("react");
 			var ui = require("@deepseek-ai/dsh-client-ui-primitives");
 			state.aboutAvailable = !!ui.Modal;
-			var SearchIcon = ui.IconSearchOutlineRegular || ui.IconSearchOutline16;
+			var SearchIcon = ui.IconSearchOutlineRegular;
 			state.ctx = ctx;
 			state.searchContent=createSearchContentService(searchContentChanged);
 			if(typeof ctx.provide==='function')ctx.provide(SEARCH_CONTENT_SERVICE,state.searchContent);
             state.writeClipboard = typeof ui.writeClipboard === "function" ? ui.writeClipboard : null;
-            // A child dependency scope may remain pending on an older Host;
+            // The durable-history scope is a child dependency;
             // sessions/slots (and loaded-only search) keep running independently.
             if(typeof ctx.inject==='function')ctx.inject(['remote','remote.session'],function(remoteCtx){
                 remoteCtx.effect(function(){
@@ -2784,9 +2735,9 @@ var BAR_ID = "dsh-find-all-root";
                 });
             });
             try {
-                var userBinding=typeof ui.projectUserText === "function" ? null : createUserProjectionBinding(ctx,searchContentChanged);
-                state.projector=createProjector(ui,react,document,userBinding?.project);
-                if(userBinding)ctx.effect(function(){return function(){userBinding.dispose();};});
+                var userBinding = createUserProjectionBinding(ctx, searchContentChanged);
+                state.projector = createProjector(ui, react, document, userBinding.project);
+                ctx.effect(function () { return function () { userBinding.dispose(); }; });
             } catch(error) { state.projector=null; }
 			state.adapter = createHostAdapter(ctx, function () {
 				if (isOpen()) {syncTarget(null, true);checkHistoryContent();}
@@ -2806,46 +2757,13 @@ var BAR_ID = "dsh-find-all-root";
                 var copy = react.useState(''), copyStatus = copy[0], setCopyStatus = copy[1];
                 var details = react.useRef(null);
                 react.useLayoutEffect(function () {
-                    var dialog = details.current && details.current.closest('[role="dialog"]');
-                    var trigger = state.contentBtn;
-                    // Older admitted Hosts export Modal without useModalLayer. Only those
-                    // Hosts need the compatibility focus layer; modern Hosts keep ownership.
-                    var legacy = typeof ui.useModalLayer !== 'function';
-                    function items() { return Array.from(dialog.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled),[tabindex="0"]')).filter(function (item) { return !item.closest('[hidden],[inert]'); }); }
-                    function topmost() { return dialog && Array.from(document.querySelectorAll('[role="dialog"][aria-modal="true"],[role="menu"]')).pop() === dialog; }
-                    function focusFirst() { focusWithoutScroll(items()[0] || dialog); }
-                    function keydown(event) {
-                        if (!topmost() || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
-                        if (event.key === 'Escape') {
-                            // Old Modal's document listener has no IME/repeat guard.
-                            event.stopPropagation();
-                            if (event.isComposing || event.keyCode === 229) return;
-                            event.preventDefault();
-                            if (!event.repeat) closeAbout();
-                        } else if (event.key === 'Tab') {
-                            var controls = items(), first = controls[0] || dialog, last = controls[controls.length - 1] || dialog;
-                            if (!dialog.contains(document.activeElement) || document.activeElement === dialog || document.activeElement === (event.shiftKey ? first : last)) {
-                                event.preventDefault(); focusWithoutScroll(event.shiftKey ? last : first);
-                            }
-                        }
-                    }
-                    function focusin(event) { if (topmost() && !dialog.contains(event.target)) focusFirst(); }
-                    if (legacy && dialog) {
-                        if (!dialog.contains(document.activeElement)) focusFirst();
-                        window.addEventListener('keydown', keydown, true);
-                        window.addEventListener('focusin', focusin, true);
-                    }
-                    // Modern Modal's child layout effect has already captured the trigger.
+                    // The current Host Modal owns focus trapping and return focus;
+                    // keep the find bar inert while this nested dialog is on top.
                     if (state.bar && state.aboutOwner) state.bar.inert = true;
-                    return function () {
-                        window.removeEventListener('keydown', keydown, true);
-                        window.removeEventListener('focusin', focusin, true);
-                        if (state.bar) state.bar.inert = false;
-                        if (legacy && state.mounted && isOpen() && trigger && trigger.isConnected) focusWithoutScroll(trigger);
-                    };
+                    return function () { if (state.bar) state.bar.inert = false; };
                 }, []);
                 function requestClose() {
-                    // Older Modal closes on every document Escape. Ignore requests from
+                    // A document Escape may also reach a newer dialog or menu. Ignore requests from
                     // behind a newer dialog/menu rather than dismissing two layers at once.
                     var dialog = details.current && details.current.closest('[role="dialog"]');
                     if (dialog && Array.from(document.querySelectorAll('[role="dialog"][aria-modal="true"],[role="menu"]')).pop() === dialog) closeAbout();

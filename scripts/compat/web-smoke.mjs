@@ -7,13 +7,12 @@ import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import path from 'node:path';
 import { chromium } from 'playwright';
-import { seedHistory, setFixturePatch, exerciseHistory, exerciseSidebarIsolation } from './synthetic-history.mjs';
+import { seedHistory } from './synthetic-history.mjs';
 import { createRedactor, captureSafePage } from './evidence.mjs';
 import { npmCommand } from './npm-command.mjs';
 import { exerciseHostHttp } from './host-http.mjs';
 import { exerciseModernHistory, exerciseModernProjection } from './modern-history.mjs';
 import { seedModernProjection } from './modern-projection-fixture.mjs';
-import { exerciseFindButtonAppearance } from './find-button-appearance.mjs';
 const secrets = new Set();
 const redact = createRedactor(secrets);
 
@@ -32,7 +31,6 @@ const runtime = path.join(run, 'runtime');
 const home = process.env.FIND_ALL_REUSE_RUN ? fs.mkdtempSync(path.join(run, 'home-')) : path.join(run, 'home');
 const workspace = path.join(home, 'workspace');
 const full = process.env.FIND_ALL_FULL_ACCEPTANCE === '1';
-const queryPath = path.join(run, 'content-index.sqlite');
 for (const dir of [discovery, runtime, home]) fs.mkdirSync(dir, { recursive: true });
 const manifest = { name: 'find-all-synthetic-acceptance', private: true, type: 'module', dependencies: { '@deepseek-ai/dsh': version } };
 const env = { ...process.env };
@@ -134,18 +132,17 @@ try {
 assert.equal(hash(), artifactSha256);
 let seeded;
 if (full) {
-  seeded = await seedHistory(runtimeRequire, home, workspace, { sidebarChild: version === '0.2.0-rc.2' });
+  seeded = await seedHistory(runtimeRequire, home, workspace);
   // Modern acceptance uses the plugin's public sessionQuery route; do not
   // enable the host's separate optional SQLite full-text index.
-  if (version.startsWith('0.2.1-')) await seedModernProjection(runtimeRequire, home, workspace);
-  setFixturePatch(home, version.startsWith('0.2.1-') ? null : queryPath);
+  await seedModernProjection(runtimeRequire, home, workspace);
 }
 let serverLog = '';
 const server = spawn(process.execPath, [bin, '--profile', 'web', '--no-open', '--host', '127.0.0.1', '--port', '4195'], { cwd: full ? workspace : runtime, env });
 server.stdout.on('data', data => serverLog += data);
 server.stderr.on('data', data => serverLog += data);
 let browser, page;
-const report = { version, artifactSha256, bootstrap: 'pending', syntheticHistory: 'not-run', findButtonAppearance: {status: 'not-run'}, desktop: 'not-run' };
+const report = { version, artifactSha256, bootstrap: 'pending', syntheticHistory: 'not-run', desktop: 'not-run' };
 try {
   let url;
   for (let elapsed = 0; elapsed < 180; elapsed++) {
@@ -206,18 +203,15 @@ try {
   await notice.waitFor({ state: 'visible', timeout: 30_000 });
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
   await notice.waitFor({ state: 'hidden' });
-  // The rc.3 native-browser observation exposes a Get started dialog with
-  // Close, Add API Key and Sign in. Close is its explicit no-account path;
-  // do not click either credential action or invent Configure later there.
-  const onboarding = version === '0.2.1-rc.3'
-    ? page.getByRole('dialog', { name: 'Get started', exact: true })
-    : null;
-  const deferSetup = onboarding
-    ? onboarding.getByRole('button', { name: 'Close', exact: true })
-    : page.getByRole('button', { name: 'Configure later', exact: true });
+  // The rc.3/rc.5 native-browser observation exposes a Get started dialog
+  // with Close, Add API Key and Sign in. Close is its explicit no-account
+  // path; do not click either credential action or invent Configure later
+  // there.
+  const onboarding = page.getByRole('dialog', { name: 'Get started', exact: true });
+  const deferSetup = onboarding.getByRole('button', { name: 'Close', exact: true });
   await deferSetup.waitFor({ state: 'visible', timeout: 30_000 });
   await deferSetup.click();
-  await (onboarding || deferSetup).waitFor({ state: 'hidden' });
+  await onboarding.waitFor({ state: 'hidden' });
   // Handle only the already inspected, non-binding prompts if a legacy reload
   // presents them again. Unknown agreements or permission prompts still fail.
   await page.addLocatorHandler(notice, async () => {
@@ -244,15 +238,8 @@ try {
   if (full) {
     report.seeds = seeded;
     const capture = name => captureSafePage(page, path.join(output, name), secrets, redact);
-    report.historyEvidence = version.startsWith('0.2.1-')
-      ? await exerciseModernHistory(page, capture)
-      : await exerciseHistory(page, home, queryPath, capture, version);
-    if (version.startsWith('0.2.1-')) report.projectionEvidence = await exerciseModernProjection(page, capture);
-    if (version === '0.2.0-rc.2') {
-      report.findButtonAppearance = {status: 'running', host: version};
-      report.findButtonAppearance = await exerciseFindButtonAppearance(page, name => captureSafePage(page, path.join(output, name), secrets, redact));
-    }
-    if (version === '0.2.0-rc.2') report.sidebarIsolation = await exerciseSidebarIsolation(page, home, queryPath, name => captureSafePage(page, path.join(output, name), secrets, redact));
+    report.historyEvidence = await exerciseModernHistory(page, capture);
+    report.projectionEvidence = await exerciseModernProjection(page, capture);
     report.syntheticHistory = 'passed';
   }
   report.browserErrors = errors.map(redact);
@@ -261,7 +248,6 @@ try {
 } catch (error) {
   if (report.bootstrap !== 'passed') report.bootstrap = 'failed';
   else if (full) report.syntheticHistory = 'failed';
-  if (report.findButtonAppearance.status === 'running') report.findButtonAppearance.status = 'failed';
   report.error = redact(error);
   if (page) {
     try {

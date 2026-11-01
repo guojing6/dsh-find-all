@@ -1,6 +1,6 @@
 // Modern official user-text projection. The Host's public evaluator owns the
 // grammar; this adapter only reads the explicitly supported display fields.
-// Reference: official RC2 UserText, PlainUserText, SessionReference,
+// Reference: official UserText, PlainUserText, SessionReference,
 // FileReference, FolderReference, SkillReference, GoalCommandReference, and
 // SecretText. Never run a second token parser or index a renderer's raw fallback.
 const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value);

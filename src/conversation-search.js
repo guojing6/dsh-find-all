@@ -20,7 +20,7 @@ const L = zh ? {
   emptyQuery: '输入关键词开始搜索。', invalidShort: '请调整搜索关键词', invalid: '关键词最多 500 个字符，不能包含空字符。',
   pending: '正在扫描对话…', unavailable: '完整搜索服务不可用；请检查服务端扩展和连接后重试。已确认的结果保留。',
   stopped: '搜索已停止；保留已确认的结果，扫描尚未完成。', failedList: '会话列表暂不可用，请重试。',
-  loading: '正在读取会话列表…', unsupported: '当前宿主暂不支持对话全文搜索。',
+  loading: '正在读取会话列表…',
   noMatches: '未找到匹配的对话。',
   more: '继续加载结果', titleOnly: '仅标题', progress: (n, total) => `已扫描 ${n} / ${total} 个对话`, partial: (failed, skipped) => `结果不完整：${failed} 个读取失败，${skipped} 个跳过。`, incomplete: '尚有对话未扫描。', retry: '重试', cancel: '停止搜索',
   untitled: '未命名对话',
@@ -44,7 +44,7 @@ const L = zh ? {
   emptyQuery: 'Enter a query to search.', invalidShort: 'Adjust your search query', invalid: 'Use at most 500 characters, without null characters.',
   pending: 'Scanning conversations…', unavailable: 'Full search service unavailable. Check the server extension and connection, then retry. Confirmed results are kept.',
   stopped: 'Search stopped. Confirmed results are kept; the scan is incomplete.', failedList: 'Conversation list unavailable. Try again.',
-  loading: 'Loading conversation list…', unsupported: 'Full-text conversation search is unsupported on this Host.',
+  loading: 'Loading conversation list…',
   noMatches: 'No matching conversations found.',
   more: 'Load more results', titleOnly: 'Titles only', progress: (n, total) => `${n} / ${total} conversations scanned`, partial: (failed, skipped) => `Incomplete results: ${failed} failed, ${skipped} skipped.`, incomplete: 'Some conversations remain unscanned.', retry: 'Retry', cancel: 'Stop search',
   untitled: 'Untitled conversation',
@@ -123,7 +123,7 @@ export function installConversationSearch(ctx, react, ui, bridge) {
   let restoreOperation = null, restoreFeedback = null;
   const scope = () => includeArchived ? ARCHIVED_SCOPE : DEFAULT_SCOPE;
   const invalidateRestoreNavigation = () => { if (restoreOperation) restoreOperation.navigate = false; restoreFeedback = null; };
-  let open = false, query = '', body = 'idle', content = EMPTY, scroll = 0, notice = '', focusOrigin = null;
+  let open = false, query = '', body = 'idle', content = EMPTY, scroll = 0, notice = '';
   let handoff = null, handoffTimer = 0, handoffStops = [], listStops = [], lastCatalogStatus = '';
   const listeners = new Set();
   let revision = 0;
@@ -219,10 +219,9 @@ export function installConversationSearch(ctx, react, ui, bridge) {
   function show(seed) {
     if (!mounted) return;
     invalidateRestoreNavigation();
-    cancelHandoff(); focusOrigin = document.activeElement; bridge.closeFind();
+    cancelHandoff(); bridge.closeFind();
     if (typeof seed === 'string' && seed !== query) { query = seed; scroll = 0; content = EMPTY; body = 'idle'; }
     open = true; notice = '';
-    if (!ui.Modal || !ui.Input) { open = false; notice = L.unsupported; publish(); return; }
     watchLists();
     // Back preserves completed or stopped results. A changed query starts a fresh scan.
     if (body === 'idle' || body === 'pending') schedule(); else publish();
@@ -307,31 +306,6 @@ export function installConversationSearch(ctx, react, ui, bridge) {
     const helpId = react.useId();
     react.useLayoutEffect(() => {
       if (list.current) list.current.scrollTop = scroll;
-      const dialog = details.current?.closest('[role="dialog"]');
-      const trigger = focusOrigin;
-      const legacy = typeof ui.useModalLayer !== 'function';
-      const topmost = () => dialog && Array.from(document.querySelectorAll('[role="dialog"][aria-modal="true"],[role="menu"]')).pop() === dialog;
-      const items = () => Array.from(dialog.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled),[tabindex="0"]')).filter(item => !item.closest('[hidden],[inert]'));
-      const focusFirst = () => (items()[0] || dialog)?.focus({ preventScroll: true });
-      function keydown(event) {
-        if (!topmost() || event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) return;
-        if (event.key === 'Escape') {
-          event.stopPropagation();
-          if (event.isComposing || event.keyCode === 229) return;
-          event.preventDefault(); if (!event.repeat) dismiss();
-        } else if (event.key === 'Tab') {
-          const controls = items(), first = controls[0] || dialog, last = controls[controls.length - 1] || dialog;
-          if (!dialog.contains(document.activeElement) || document.activeElement === dialog || document.activeElement === (event.shiftKey ? first : last)) {
-            event.preventDefault(); (event.shiftKey ? last : first)?.focus({ preventScroll: true });
-          }
-        }
-      }
-      const focusin = event => { if (topmost() && !dialog.contains(event.target)) focusFirst(); };
-      if (legacy && dialog) { focusFirst(); window.addEventListener('keydown', keydown, true); window.addEventListener('focusin', focusin, true); }
-      return () => {
-        window.removeEventListener('keydown', keydown, true); window.removeEventListener('focusin', focusin, true);
-        if (legacy && mounted && trigger?.isConnected) trigger.focus({ preventScroll: true });
-      };
     }, []);
     const data = currentCatalog();
     const results = body === 'invalid' ? EMPTY : merge(data.rows, content);
@@ -360,7 +334,7 @@ export function installConversationSearch(ctx, react, ui, bridge) {
     };
     const setTitleOnly = checked => { invalidateRestoreNavigation(); mode = checked ? 'title' : 'title-body'; scroll = 0; notice = ''; cancelHandoff(); schedule(); };
     const setIncludeArchived = checked => { invalidateRestoreNavigation(); includeArchived = checked; scroll = 0; notice = ''; cancelHandoff(); schedule(); };
-    const checkbox = (checked, onChange, label) => ui.Checkbox ? h(ui.Checkbox, { checked, onChange, label, className: 'dsh-find-all-conversations-title-only' }) : h('label', { className: 'dsh-find-all-conversations-title-only dsh-find-all-conversations-title-only-fallback' }, h('input', { type: 'checkbox', checked, onChange: event => onChange(event.target.checked) }), ' ', label);
+    const checkbox = (checked, onChange, label) => h(ui.Checkbox, { checked, onChange, label, className: 'dsh-find-all-conversations-title-only' });
     const actions = retryable || pending || content.cursor ? h('div', { className: 'dsh-find-all-conversations-actions' },
       retryable ? h(ui.Button, { type: 'button', size: 'sm', variant: 'ghost', onClick: () => {
         notice = ''; schedule();
@@ -407,11 +381,11 @@ export function installConversationSearch(ctx, react, ui, bridge) {
   }
   function Entry(props) {
     react.useSyncExternalStore(listener => { listeners.add(listener); return () => listeners.delete(listener); }, () => revision);
-    const Icon = ui.IconSearchOutlineRegular || ui.IconSearchOutline16;
+    const Icon = ui.IconSearchOutlineRegular;
     return h(react.Fragment, null,
       h(ui.Button, { type: 'button', size: 'sm', variant: 'ghost', title: notice || L.title, 'aria-label': L.title, onClick: () => show(), style: { width: '100%', justifyContent: props.wide ? 'flex-start' : 'center', gap: 8 } }, Icon ? h(Icon, { size: 16 }) : null, props.wide ? L.title : null),
       notice && !open ? h('div', { role: 'status', style: { fontSize: 12, padding: 8, overflowWrap: 'anywhere' } }, notice) : null,
-      open && ui.Modal ? h(Panel) : null);
+      open ? h(Panel) : null);
   }
   ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({ name: 'sidebar.footer.action', id: 'dsh-find-all-search', order: 10 }, Entry));
   if (typeof ctx.inject === 'function') ctx.inject(['uiWorkspace', 'workspaces', 'layout'], child => {

@@ -17,10 +17,6 @@ test('missing user projector does not disable Markdown projection or claim raw t
   assert.equal(missing.errors[0].code,'user-projection-unavailable');
   assert.deepEqual(project({kind:'assistant',format:'markdown',raw:'hello'}).blocks.map(b=>b.text),['hello']);
 });
-test('legacy host user projection retains its display semantics', () => {
-  const project = createProjector({...ui,projectUserText:()=>React.createElement('span',null,'path.txt')},React,new JSDOM('').window.document);
-  assert.deepEqual(project(user).blocks.map(b=>b.text),['path.txt']);
-});
 test('explicit asynchronous user projection preserves its errors and does not replace source text', async () => {
   let observed;
   const result={blocks:[{text:'path.txt',index:0}],mapping:'user',errors:[]};

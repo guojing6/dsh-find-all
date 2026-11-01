@@ -61,10 +61,10 @@ export function setup() {
     now = end;
     for (let i = 0; i < 60; i++) await Promise.resolve();
   }
-  async function mount(id, modern = false, props = {}) {
+  async function mount(id, props = {}) {
     const panel = w.document.createElement('section');
     panel.dataset.phase = 'active';
-    panel.innerHTML = `<header><div class="utility"></div></header><div ${modern ? `data-conversation-content data-conversation-session="${id}"` : ''}><div data-conversation-scroll><div data-chat-flow><p>${id} needle</p></div><textarea>composer needle</textarea></div></div>`;
+    panel.innerHTML = `<header><div class="utility"></div></header><div data-conversation-content data-conversation-session="${id}"><div data-conversation-scroll><div data-chat-flow><p>${id} needle</p></div><textarea>composer needle</textarea></div></div>`;
     w.document.body.append(panel);
     const root = createRoot(panel.querySelector('.utility'));
     await act(async () => root.render(React.createElement(Component, { sessionId: id, ...props })));

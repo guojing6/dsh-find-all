@@ -1,4 +1,4 @@
-// Pure RC2 ContextBody projection. This is deliberately a field adapter, not a
+// ContextBody projection for the supported DSH host. This is deliberately a field adapter, not a
 // Markdown parser or a copy of the Host UI. Source: ui-chat ContextBody and the
 // input-message/inbox definitions at deepseek-harness 639ed015.
 const MAX_CHARS = 20000;

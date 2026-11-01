@@ -14,9 +14,9 @@ DeepSeek Harness（DSH）的对话查找插件。搜索各工作区对话的标�
 2. 输入 `@ryuu-64/dsh-find-all`，安装并启用。
 3. 重启 DSH（网页版需重启服务并刷新页面）。
 
-如果装过 `dsh-find-bar`，请先卸载，避免快捷键冲突。`0.1.15` 精确支持官方 DSH `0.2.1-rc.3`，并保留此前声明的宿主版本；Web 与桌面端的实测范围见[兼容说明](docs/compatibility.md)。
+如果装过 `dsh-find-bar`，请先卸载，避免快捷键冲突。`0.2.0` 只支持官方 DSH `0.2.1-rc.5`：四个宿主依赖都只声明这一版本，旧版本会被安装门禁拒绝。实测范围见[兼容说明](docs/compatibility.md)。
 
-> `0.1.15` 在 `0.1.14` 基线上精确加入 `0.2.1-rc.3`，搜索逻辑不变；构建产物仅更新内置版本号。rc.3 实测范围为 dot Linux Web，不外推 Electron/Tauri。原因、实测与未测边界见 [rc.3 兼容审查](docs/rc3-compatibility.md)。
+> `0.2.0` 删除了旧宿主兼容声明和只为旧版本存在的回退代码，构建产物随之重建。rc.5 实测范围为隔离的官方 Desktop Web 配置，不外推 Electron/Tauri 安装器；未测边界见[兼容说明](docs/compatibility.md)。
 
 ## 使用
 

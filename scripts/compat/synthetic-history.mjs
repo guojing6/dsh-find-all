@@ -1,29 +1,24 @@
-// Uses the official Session/JSONL seams exercised by these host tests:
-// https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.5-rc.2/apps/web/tests/chat-scroll-fixture.ts
-// https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.5-rc.2/apps/web/tests/scaffold.ts
-// https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/apps/web/tests/scaffold.ts
+// Uses the official Session/JSONL seams exercised by the current host tests.
 // No model is called: every synthetic turn is already closed.
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { captureInitialSelection, assertRetainedSelection, assertCompleteFixtureRanges, assertSelectedFixtureToken } from './selection-proof.mjs';
 
-export async function seedHistory(runtimeRequire, home, workspace, { sidebarChild = false } = {}) {
+export async function seedHistory(runtimeRequire, home, workspace) {
   const load = name => import(pathToFileURL(runtimeRequire.resolve(name)).href);
   const { Session, SessionId, SESSION_FORMAT_VERSION } = await load('@deepseek-ai/dsh-session');
   const { createUserMessage, createAssistantMessage, createSystemMessage } = await load('@deepseek-ai/dsh-llm');
   const { Context } = await load('@deepseek-ai/cordis');
   const jsonl = await load('@deepseek-ai/dsh-session-persistence-jsonl');
   const Jsonl = jsonl.default ?? jsonl;
-  const descriptor = sidebarChild ? (await load('@deepseek-ai/dsh-subagent')).snapshotSubagentDescriptor : null;
   const createdAt = Date.now() - 60_000;
   fs.mkdirSync(workspace, { recursive: true });
   const ctx = new Context();
   const summary = [];
   try {
     await ctx.plugin(Jsonl, { root: path.join(home, '.dsh', 'sessions') });
-    for (const label of sidebarChild ? ['A', 'B', 'C'] : ['A', 'B']) {
+    for (const label of ['A', 'B']) {
       const id = SessionId(`find-all-synthetic-${label.toLowerCase()}`);
       const session = Session.create(id);
       for (let turn = 1; turn <= 80; turn++) {
@@ -36,16 +31,6 @@ export async function seedHistory(runtimeRequire, home, workspace, { sidebarChil
         const user = session.append('user/message', createUserMessage({
           content: [{ type: 'text', text: `FIND_ALL_${label}_USER_${suffix} synthetic user` }], source: { kind: 'user' },
         }), { surfaceOp: 'append' });
-        // Official rc2 subagent-conversation.e2e.ts authors completed one-shot
-        // child headers, descriptor events and parent catalog entries without
-        // asking a model. Keep A/B root histories unchanged and add child C.
-        if (turn === 1 && sidebarChild && label === 'A') session.append('subagent/catalog', {
-          version: 0, childId: SessionId('find-all-synthetic-c'), childCreatedAt: createdAt,
-          mode: 'one-shot', label: 'FIND_ALL_CHILD_SIDEBAR',
-        });
-        if (turn === 1 && sidebarChild && label === 'C') session.append('subagent/descriptor', descriptor({
-          mode: 'one-shot', provider: 'spawn', label: 'FIND_ALL_CHILD_SIDEBAR',
-        }));
         if (turn === 1) session.append('session/title', {
           title: `FIND_ALL_${label} synthetic compatibility`, messageSeqs: [user.seq], source: { kind: 'fallback' },
         });
@@ -67,8 +52,7 @@ export async function seedHistory(runtimeRequire, home, workspace, { sidebarChil
       assert.equal(events.at(-1).type, 'turn/end');
       const handle = await ctx.sessionPersistence.create({
         version: SESSION_FORMAT_VERSION, id, createdAt,
-        isSeeded: false, cwd: workspace, delegationDepth: label === 'C' ? 1 : 0,
-        ...(label === 'C' ? { parentSession: SessionId('find-all-synthetic-a'), origin: 'subagent' } : {}),
+        isSeeded: false, cwd: workspace, delegationDepth: 0,
       });
       await handle.append(events);
       await handle.close();
@@ -76,229 +60,4 @@ export async function seedHistory(runtimeRequire, home, workspace, { sidebarChil
     }
   } finally { await ctx.fiber.dispose(); }
   return summary;
-}
-
-export async function exerciseSidebarIsolation(page, home, queryPath, capture, profile = 'web') {
-  // Use the official rc2 Subagent catalog/Sidebar controls. Do not fabricate
-  // a second DOM pane: it must be rendered by the real host from child C.
-  // https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/apps/web/tests/subagent-conversation.e2e.ts
-  await page.getByRole('button', { name: '1 subagent', exact: true }).hover();
-  await page.getByRole('treeitem', { name: /FIND_ALL_CHILD_SIDEBAR/ })
-    .getByRole('button', { name: 'Open FIND_ALL_CHILD_SIDEBAR in sidebar', exact: true }).click();
-  const sidebar = page.locator('[data-sidebar-chat]');
-  await sidebar.getByText('FIND_ALL_C_USER_080 synthetic user', { exact: true }).waitFor();
-  const content = sidebar.locator('[data-conversation-content]');
-  assert.equal(await content.getAttribute('data-conversation-session'), 'find-all-synthetic-c');
-  assert.equal(await content.getAttribute('data-content-phase'), 'active');
-  assert.equal(await sidebar.locator('[data-find-all-session]').count(), 0, 'official embedded view has no utility anchor');
-  const anchor = page.locator('[data-find-all-session="find-all-synthetic-a"]');
-  const bar = page.locator('#dsh-find-all-root');
-  async function assertMainScope(label) {
-    await eventually(() => bar.locator('.count').innerText(), '1/80', label);
-    const scoped = await page.evaluate(() => {
-      const flow = document.querySelector('[data-conversation-session="find-all-synthetic-a"] [data-chat-flow]');
-      const ranges = [...(CSS.highlights.get('dsh-find-all-hit') || [])];
-      return ranges.length === 80 && ranges.every(range => flow.contains(range.startContainer));
-    });
-    assert.equal(scoped, true, 'all 80 highlights belong to main A, never sidebar C');
-  }
-  try {
-    // Native re-enable creates a pristine plugin while both real panes remain.
-    setFixturePatch(home, queryPath, true, profile);
-    await eventually(() => page.locator('[data-find-all-session]').count(), 0, 'disable before neutral main-target regression');
-    setFixturePatch(home, queryPath, false, profile);
-    await anchor.waitFor({ state: 'visible' });
-    await page.evaluate(() => document.activeElement?.blur());
-    assert.equal(await page.evaluate(() => document.activeElement === document.body), true);
-    await page.keyboard.press('Control+f');
-    await bar.locator('input').fill('FIND_ALL_A_USER_');
-    await assertMainScope('first neutral shortcut searches main A beside the headerless sidebar');
-    await capture('sidebar-neutral-main-scope');
-    // At the installed Desktop's 1024px width the find bar overlaps the main
-    // header utility. Dismiss it normally before selecting that visible control.
-    await page.keyboard.press('Escape');
-    await bar.waitFor({ state: 'hidden' });
-    await anchor.click();
-    await bar.locator('input').fill('FIND_ALL_A_USER_');
-    await assertMainScope('main header button uses the same target as Ctrl+F');
-    await page.keyboard.press('Escape');
-    await sidebar.getByText('FIND_ALL_C_USER_080 synthetic user', { exact: true }).click();
-    await page.evaluate(() => document.activeElement?.blur());
-    await page.keyboard.press('Control+f');
-    await bar.locator('input').fill('FIND_ALL_A_USER_');
-    await assertMainScope('sidebar interaction preserves main A');
-    await capture('sidebar-interaction-main-scope');
-    await bar.locator('input').fill('FIND_ALL_C_USER_');
-    await page.waitForTimeout(1200);
-    assert.equal(await bar.locator('.count').innerText(), '0/0', 'sidebar-only text is excluded from main search');
-    assert.equal(await page.evaluate(() => CSS.highlights.has('dsh-find-all-hit')), false);
-    await page.keyboard.press('Escape');
-    const close = page.locator('[data-sidebar-right-panel] [data-dockkit-tab-close]');
-    assert.equal(await close.count(), 1);
-    await close.click();
-    await sidebar.waitFor({ state: 'detached' });
-    await page.keyboard.press('Control+f');
-    await bar.locator('input').fill('FIND_ALL_A_USER_');
-    await assertMainScope('closing the sidebar preserves main A without a preparatory main click');
-    await capture('sidebar-closed-main-scope');
-    return { layout: 'official rc2 embedded subagent sidebar', neutralMainScope: 'passed', mainHeaderScope: 'passed', sidebarInteractionMainScope: 'passed', sidebarTextExcluded: 'passed', sidebarCloseMainScope: 'passed', nativeResetCycles: 1 };
-  } finally {
-    await page.keyboard.press('Escape');
-    if (await sidebar.count()) {
-      const close = page.locator('[data-sidebar-right-panel] [data-dockkit-tab-close]');
-      assert.equal(await close.count(), 1);
-      await close.click();
-      await sidebar.waitFor({ state: 'detached' });
-    }
-  }
-}
-
-export function setFixturePatch(home, queryPath, disabled = false, profile = 'web') {
-  assert.ok(['web', 'desktop'].includes(profile), 'only owned Web/Desktop fixture profiles are allowed');
-  const file = path.join(home, '.dsh', 'profiles', profile, 'cordis.patch.yml');
-  // Both profiles use the official live profile patch reload mode. JSON is valid YAML.
-  const patches = [
-    // The official Web scaffold also disables background LLM title generation.
-    { id: 'session-title-llm', disabled: true },
-    ...(queryPath ? [{ id: 'session-query-sqlite', config: { path: queryPath, openAt: 'first-search' } }] : []),
-    { id: 'find-all', disabled },
-  ];
-  fs.writeFileSync(`${file}.tmp`, JSON.stringify(patches));
-  fs.renameSync(`${file}.tmp`, file);
-}
-
-async function eventually(read, expected, label, timeout = 30_000) {
-  const until = Date.now() + timeout;
-  let value;
-  while (Date.now() < until) {
-    value = await read();
-    if (value === expected) return;
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  assert.equal(value, expected, label);
-}
-
-export async function exerciseHistory(page, home, queryPath, capture, version, profile = 'web') {
-  const refreshRequired = ['0.1.5-rc.2', '0.1.5-rc.3', '0.1.6-alpha.1'].includes(version);
-  // CLI profiles group these seeds under their actual temporary workspace;
-  // the upstream scaffold's 'Ungrouped' barrier does not apply to this layout.
-  await page.getByRole('button', { name: 'Search sessions' }).waitFor({ state: 'visible', timeout: 30_000 });
-  async function openSession(label) {
-    const searchButton = page.getByRole('button', { name: 'Search sessions' });
-    if (await searchButton.getAttribute('aria-expanded') !== 'true') await searchButton.click();
-    await page.getByRole('textbox', { name: /^(Search sessions\.\.\.|Search session names)$/ }).fill(`FIND_ALL_${label}_USER_001`);
-    const results = page.getByRole('tree', { name: 'Search results' }).getByRole('treeitem');
-    await eventually(() => results.count(), 1, 'synthetic session search result', 60_000);
-    await results.click();
-    await page.getByRole('tab', { name: 'Chat', exact: true }).waitFor({ timeout: 30_000 });
-    await page.locator('[data-chat-flow]').getByText(`FIND_ALL_${label}_USER_080 synthetic user`, { exact: true }).waitFor();
-    const anchor = page.locator(`[data-find-all-session="find-all-synthetic-${label.toLowerCase()}"]`);
-    await anchor.waitFor({ state: 'visible' });
-    return anchor;
-  }
-  const availableStatus = 'Searched currently available history; the host offers no earlier pages, so completeness cannot be confirmed';
-  const selectionEvidence = [];
-  async function verifyWholeHistory(label, bar) {
-    if (await bar.locator('.scope').innerText() !== 'Loaded content') await bar.locator('.scope').click();
-    const query = `FIND_ALL_${label}_USER_`;
-    const initial = (await page.locator('[data-chat-flow]').innerText()).split(query).length - 1;
-    assert.ok(initial > 0 && initial <= 80, 'known fixture history must be visible');
-    await bar.locator('input').fill(query);
-    await eventually(() => bar.locator('.count').innerText(), `1/${initial}`, 'Loaded-content search initially selects the first rendered hit');
-    const saved = await page.evaluateHandle(captureInitialSelection, { label, query });
-    try {
-      const marker = await saved.evaluate(value => value.marker);
-      await bar.locator('.scope').click();
-      await eventually(() => bar.locator('.status').innerText(), availableStatus, 'successful completion must be explicit', 60_000);
-      await eventually(() => bar.locator('.count').innerText(), `${marker}/80`, 'paging preserves the exact original match after prepend', 60_000);
-      assert.equal(await page.evaluate(assertCompleteFixtureRanges, { label, query }), 80);
-      assert.equal(await page.evaluate(assertRetainedSelection, saved), marker);
-      const next = marker % 80 + 1;
-      await page.keyboard.press('F3');
-      assert.equal(await bar.locator('.count').innerText(), `${next}/80`);
-      await page.evaluate(assertSelectedFixtureToken, { label, query, marker: next, total: 80 });
-      await page.keyboard.press('Shift+F3');
-      assert.equal(await bar.locator('.count').innerText(), `${marker}/80`);
-      assert.equal(await page.evaluate(assertRetainedSelection, saved), marker);
-      selectionEvidence.push({ label, transition: 'preserved-current-match', initialTotal: initial, marker, count: `${marker}/80`, exactTextIdentity: 'passed', navigation: 'passed' });
-    } finally { await saved.dispose(); }
-  }
-  const visited = new Set();
-  for (const label of ['A', 'B', 'A']) {
-    const anchor = await openSession(label);
-    if (!visited.has(label)) {
-      const rendered = await page.locator('[data-chat-flow]').innerText();
-      const initial = rendered.split(`FIND_ALL_${label}_USER_`).length - 1;
-      assert.ok(initial > 0 && initial < 80, 'fixture must start partially loaded to test actual paging');
-      visited.add(label);
-    }
-    if (label === 'A' && visited.size === 1) {
-      // Regression: no anchor click or conversation-focus preparation. Start
-      // with body focus after the host has mounted its session header utility.
-      await page.evaluate(() => document.activeElement?.blur());
-      assert.equal(await page.evaluate(() => document.activeElement === document.body), true);
-      await page.keyboard.press('Control+f');
-    } else await anchor.click();
-    const bar = page.locator('#dsh-find-all-root');
-    await verifyWholeHistory(label, bar);
-    await capture(`history-${label}`);
-    // Retained queries must not start loading the next session before its snapshot.
-    await bar.locator('.scope').click();
-    await page.keyboard.press('Escape');
-  }
-  // Old official HMR clients deliberately ignore graph frames. A fresh SSE
-  // connection reads the server's actual graph before we test a required reload.
-  async function graphContainsPlugin() {
-    return page.evaluate(() => new Promise((resolve, reject) => {
-      const source = new EventSource('/plugins/events');
-      const timer = setTimeout(() => { source.close(); reject(new Error('graph handshake timeout')); }, 5000);
-      source.onmessage = event => {
-        const frame = JSON.parse(event.data);
-        if (frame.type !== 'graph') return;
-        clearTimeout(timer);
-        source.close();
-        resolve(frame.graph.entries.some(row => row.id === '@ryuu-64/dsh-find-all'));
-      };
-      source.onerror = () => { clearTimeout(timer); source.close(); reject(new Error('graph handshake failed')); };
-    }));
-  }
-  // Toggle the actual installed plugin through the official live profile patch.
-  // Modern hosts must not reload. The two legacy hosts require explicit reloads.
-  let navigations = 0;
-  const navigation = frame => { if (frame === page.mainFrame()) navigations++; };
-  page.on('framenavigated', navigation);
-  try {
-    for (let cycle = 0; cycle < 2; cycle++) {
-      await page.locator('[data-find-all-session]').click();
-      await page.locator('#dsh-find-all-root input').fill('FIND_ALL_A_USER_');
-      setFixturePatch(home, queryPath, true, profile);
-      if (refreshRequired) {
-        await eventually(graphContainsPlugin, false, 'server graph acknowledges disable');
-        assert.equal(await page.locator('#dsh-find-all-root').count(), 1, 'legacy host does not hot-unload graph entries');
-        await page.reload({ waitUntil: 'load' });
-        await page.getByRole('button', { name: 'Search sessions' }).click();
-      }
-      await eventually(() => page.locator('#dsh-find-all-root').count(), 0, 'disable removes the find bar after the supported lifecycle');
-      assert.equal(await page.locator('[data-find-all-session]').count(), 0);
-      assert.equal(await page.evaluate(() => CSS.highlights.has('dsh-find-all-hit')), false);
-      await page.keyboard.press('Control+f');
-      assert.equal(await page.locator('#dsh-find-all-root').count(), 0);
-      setFixturePatch(home, queryPath, false, profile);
-      if (refreshRequired) {
-        await eventually(graphContainsPlugin, true, 'server graph acknowledges re-enable');
-        await page.reload({ waitUntil: 'load' });
-        await openSession('A');
-      }
-      await page.locator('[data-find-all-session]').waitFor({ state: 'visible', timeout: 30_000 });
-      assert.equal(await page.locator('[data-find-all-session]').count(), 1);
-      await page.locator('[data-find-all-session]').click();
-      assert.equal(await page.locator('#dsh-find-all-root').count(), 1);
-      const bar = page.locator('#dsh-find-all-root');
-      await verifyWholeHistory('A', bar);
-      await bar.locator('.scope').click();
-      await page.keyboard.press('Escape');
-    }
-    assert.equal(navigations, refreshRequired ? 4 : 0, 'only legacy lifecycle may require explicit page reloads');
-  } finally { page.off('framenavigated', navigation); }
-  return { histories: ['A', 'B', 'A'], firstBodyShortcutWithoutAnchorClick: 'passed', turnsPerSession: 80, selectionEvidence, nativeHotUnload: refreshRequired ? 'unsupported-by-host' : 'passed', hotCycles: refreshRequired ? 0 : 2, refreshCycles: refreshRequired ? 2 : 0 };
 }

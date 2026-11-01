@@ -32,7 +32,7 @@ export function collectProjectedBlocks(root, excluded, classify, options) {
     }
     // Official modern user chips and secret toggles contain decorative SVGs
     // inside an otherwise continuous text run. They are not text boundaries.
-    // Keep legacy/general projection and real BR/block boundaries unchanged.
+    // Keep general projection and real BR/block boundaries unchanged.
     if (options?.officialUserInline && node.nodeType === 1 && node.matches('svg[aria-hidden="true"]')
       && node.closest('[data-ref-chip],[data-secret]')) return;
     if (node.nodeType === 1 && (node.matches(SKIP) || node.tagName === 'BR')) { flush(); return; }
@@ -85,7 +85,7 @@ function semanticSubstring(block,text){
 }
 export function createProjector(ui, react, document, projectUser) {
   if(!ui.MarkdownText||!/^18\./u.test(react.version||''))throw Error('Host Markdown projection unavailable');
-  // Lazy initialization keeps legacy loaded-only mode usable with older hosts.
+  // Lazy initialization keeps loaded-only search working if projection setup fails.
   const {renderToStaticMarkup}=require('react-dom/server.browser');
   function render(element) { const template=document.createElement('template');template.innerHTML=renderToStaticMarkup(element);return template.content; }
   // Resolve the image-alt class from this exact Host renderer rather than
@@ -173,10 +173,10 @@ export function createProjector(ui, react, document, projectUser) {
       return {blocks,mapping:'markdown',rootClass:root.classList[0],errors:[]};
     }
     if(source.kind==='user'&&source.sourceKind==='user') {
+      // The current host exposes its public user-text evaluator; the adapter
+      // never falls back to the stored raw input when that contract is missing.
       if(typeof projectUser==='function')return projectUser(source);
-      if(typeof ui.projectUserText!=='function')return {blocks:[],mapping:'user',errors:[{code:'user-projection-unavailable',message:'Host user-text projection is unavailable; user text was not indexed'}]};
-      const fragment=render(react.createElement('div',null,ui.projectUserText(source.raw,source.referenceLabels||[],source.skillNames||[],'skill')));
-      return {blocks:collectProjectedBlocks(fragment).map((b,index)=>({text:b.text,index,...(b.imageDescription?{imageDescription:true}:{})})),mapping:'user',errors:[]};
+      return {blocks:[],mapping:'user',errors:[{code:'user-projection-unavailable',message:'Host user-text projection is unavailable; user text was not indexed'}]};
     }
     // Unknown custom cards may transform or suppress stored fields. Never
     // count text that cannot be tied to one rendered Chat range.

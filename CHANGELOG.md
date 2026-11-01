@@ -1,11 +1,20 @@
 # Changelog
 
+## 0.2.0
+
+- Support only official DSH `0.2.1-rc.5`. All four peer requirements now declare exactly that version; every earlier declared host, `0.2.1-rc.4` and future releases are no longer admitted.
+- Remove code and fixtures that only served older hosts: the legacy `projectUserText` projection, pre-`useModalLayer` focus layers, alternate `Checkbox`/search-icon exports, the optional `data-conversation-session` check and the pre-`data-clock` message-action fallback.
+- Remove the historical compatibility documents, the multi-version vendor pins, and the old desktop/Windows installer targets with their acceptance harness. `docs/compatibility.md` is now the single current-host record.
+- Rebuild the bundle for the narrowed surface (SHA-256 `b84a1f65c0d760647e1aebfdd3bc0c60d5a4c66eeddb88adba216456fb995c12`).
+- Verify on an isolated official `0.2.1-rc.5` Web profile: normal `dsh plugin add` installation, plugin present in `__DSH_BOOT__`, real-Chrome cross-conversation search and retained-query handoff into the find bar, exact Host snippets/ranges, and 134 passing tests.
+- Not verified: packaged Electron/Tauri installers, other host versions, masked-secret reveal, archived-search UI and the full navigation matrix.
+
 ## 0.1.15
 
 - Based on `0.1.14`, with unchanged search logic; the generated bundle only updates its embedded version metadata.
 - Add exact DSH `0.2.1-rc.3` to all four existing peer requirements, retaining previous versions and excluding future releases. Search logic is unchanged; the generated bundle only updates its embedded version metadata.
 - Verify 0.1.15 installation and HTTP on exact rc.3. Native dot Linux Web search/highlighting, history paging, archive/restore, masked projections, lifecycle, and light/dark theme smoke passed on the patched 0.1.14 candidate with equivalent search logic. All 198 checks and release-artifact checks pass. Electron/Tauri and other host versions were not rerun.
-- Add declaration checks and a modern real-host acceptance harness; see `docs/rc3-compatibility.md` for actual results and unverified boundaries.
+- Add declaration checks and a modern real-host acceptance harness (the historical rc.3 record was removed in 0.2.0).
 
 ## 0.1.14
 

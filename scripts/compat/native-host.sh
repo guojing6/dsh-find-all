@@ -11,4 +11,4 @@ OUTPUT=${2:?Pass a private evidence output directory}
 export PATH="$FIND_ALL_PACKAGE_BIN:$FIND_ALL_NODE_BIN:$PATH"
 export FIND_ALL_SERVER_ONLY=1 FIND_ALL_FULL_ACCEPTANCE=1
 cd "$ROOT"
-exec node scripts/compat/web-smoke.mjs 0.2.1-rc.3 "$ARTIFACT" "$OUTPUT"
+exec node scripts/compat/web-smoke.mjs 0.2.1-rc.5 "$ARTIFACT" "$OUTPUT"

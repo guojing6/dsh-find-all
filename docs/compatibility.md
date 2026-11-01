@@ -1,217 +1,74 @@
-> **0.1.15 / rc.3:** this version additionally admits exact `0.2.1-rc.3`; see [the separate native Web review and verification results](rc3-compatibility.md). Historical results below describe the rc.2 baseline and do not imply a new rc.3 Desktop pass.
-
-# Issue 35: modern user-text projection
-
-The package now admits official DSH `0.2.1-rc.2` through all four existing DSH peer ranges. Every previously listed release remains admitted; that released baseline did not add other `0.2.1` prereleases or future versions. Version 0.1.15 adds only exact rc.3 as noted above. Normal installation needs no exact-version exemption. The rc.2 baseline's Web verification and the reported packaged Windows Desktop acceptance are recorded below.
-
-The current-conversation whole-session path uses the retained Session's public `uiConversation.userText.createEvaluator()` when the legacy `ui.projectUserText` API is absent. It supplies the historical message's batch-derived session labels and skill names, not the current composer's facts. Official text/display, session/file/folder labels, command/skill names and default secret masks are projected without mounting hidden Chat rows. Unknown or malformed nodes, evaluator/renderer failures, missing capabilities and non-text user attachments produce explicit partial coverage. One failed source does not discard independent usable sources or fall back to its stored raw input.
-
-Secret-bearing user text is indexed in its default masked state. The find bar explains this policy. Clicking Show secret changes that message's current display, not the whole-history count; a masked result that no longer matches the live body cannot receive a fabricated highlight. Existing live highlights are revalidated and removed/rebound when their DOM changes. Search never clicks Show secret on the user's behalf. Loaded-content mode continues to describe only the currently rendered content, including text the user explicitly revealed.
-
-Session/store generations, evaluator registry revisions, cooperative search-content rules and observable relevant Slot/Factory changes invalidate the cached projection and pending navigation. Relevant durable content/facts changes also invalidate the cut. Navigation loads the durable sequence, resolves its original Chat row and validates the exact UTF-16 DOM Range before highlighting.
-
-The public Slot API exposes effective entries, not authenticated renderer provenance. Initial entries are a change baseline only. An already-installed custom replacement using an official key cannot be automatically recognized as custom. Such plugins must use the existing `ryuu.findAllSearchContent` cooperation contract for their changed text semantics; this implementation does not certify arbitrary third-party renderers. Detected subsequent winner changes and renderer errors become partial rather than silently assuming the original display. No third-party file-review plugin was installed for this verification.
-
-The historical host matrix below is not rerun automatically by these changes. New host compatibility requires separate real-host acceptance, not merely a wider peer range. The full-text search across conversations is a separate surface and retains its own documented raw/excerpt behavior; this change does not claim that surface masks secrets.
-
-
-## Verification status (2026-10-22)
-
-- `npm run check`: 196 tests passed. `npm run verify:release`: passed; the packed bundle matched the tested source build.
-- Official DSH `0.2.1-rc.2`, fresh isolated Web profile: the candidate with the expanded peer declarations installed through the normal CLI with no exemption. Real Chat file-label search, two default masked secrets, reveal-local highlight invalidation, second-hit navigation and remount masking passed. The hidden fake-key fragment had zero whole-history matches and one loaded-content match after manual reveal.
-- On that modern host, an 80-turn synthetic conversation initially rendered 25 user messages and 25 assistant replies. Loaded-content counts were 25 each; whole-history counts were 80 each and 160 for their shared prefix, while only 25 turns remained rendered. Independent offscreen navigation to user `001` and assistant `001` loaded the original rows, highlighted the exact query, and remained visible after settling. Query replacement, Close and A/B/A session switching during search passed, as did cross-conversation body search and its retained-query handoff. No page or console errors were recorded.
-- Official DSH `0.2.0-rc.2`, separate isolated Web profile: the unmodified `85e683b` artifact installed normally and passed the same 25/80/160 counts, independent earliest-user/assistant navigation, and query/Close/A/B/A cancellation checks. The prior dependency-download blocker is resolved for this run. The final expanded-declaration package also installed normally on both hosts; direct repository `seedHistory` preparation passed with both persistence-module export shapes.
-- Both Web runs used Windows, Chromium `141.0.7390.37`, a `1400×900` viewport, empty test profiles and completed synthetic messages without model calls. Their production client bundle was byte-identical: SHA-256 `01e6ed3470b4ea42281f1016b88ffdb02246dc9654274666ae978653ba02f0b9`. The support declaration changes no production JavaScript.
-- Chromium previously showed `Aw Snap` error 9 during testing. Its cause was not established. The same tab later recovered and the outstanding assistant navigation passed; this does not claim a browser-crash fix.
-- [PR #36](https://github.com/Ryuu-64/dsh-find-all/pull/36) subsequently reports final `4447dc6` acceptance on packaged Windows Desktop `0.2.1-rc.2`, extracted unchanged from the validly signed official installer and using its bundled CLI. The same candidate tarball passed normal installation, 25/80/160 counts, earliest-user/assistant navigation, cancellation, modern masked-secret/file-label checks and cross-conversation search. Windows installer/registry integration was not tested. Two earlier generic `ERR_FAILED` console entries lacked original URL metadata; follow-up startup/navigation was clean and normal shutdown reproduced the text at `dsh-app://app/plugins/events`, but the earlier entries cannot be individually attributed. This is the PR author's acceptance report, not a new Desktop run by this release preparation.
-- Older Desktop hosts, the other historical host versions and arbitrary third-party renderer replacements were not revalidated by these runs. The repeatable scope and remaining checks are listed in [the regression checklist](issue35-testing.md). No npm publication is implied.
-
----
-
-# Full-text conversation search
-
-The Full-text conversation search entry's original contract targets public DSH `0.2.0-rc.2` at [`639ed015`](https://github.com/deepseek-ai/deepseek-harness/tree/639ed015397290b3745d163aafe02ffee4aa3f84). This contract history does not claim that every historical peer version or Electron Desktop has passed acceptance. Current `0.2.1-rc.2` support and verification are recorded above.
-
-## Host and client contract
-
-The same package now contains an optional Host half. A Cordis child scope acquires `connection`, `sessionQuery`, and `workspaceRegistry`; the authenticated `connection.fetch` registry owns POST `/api/dsh-find-all/search`. The browser addresses `api/dsh-find-all/search` relative to the document, preserving reverse-proxy mount paths. There is no new listener, direct database/log reader, provider replacement, or external upload. Missing services leave current-conversation find installed and make cross-conversation search explicitly unavailable.
-
-`sessionQuery.listSessions(signal)` establishes Host identity/cwd/origin availability; `observeSession(id, { signal, projectionMode: 'none' })` supplies each immutable cut. The official Web default remains `session-query-sqlite.openAt: never`. No FTS handle, extra persistent index, or package dependency is required.
-
-The root sidebar entry and current find menu use native Modal/Button/Input/Checkbox primitives. The search surface uses the public `Modal` headless contract: `title` still supplies the dialog aria-label, while the Host owns the mask, focus trap, Escape handling and return focus. A top-aligned card stays inside the native padding and available height, keeping the input and scope row stationary without reserving a large empty result area. The two-line result region grows to a bounded height and scrolls independently; low-frequency expanded help is separately bounded. Search progress, partial states and paging actions stay below results; a successful complete scan shows a short result count. Details remain collapsed unless requested. No default shortcut is added or replaced. Client catalog membership comes from ready `sessions.list.ids`, not arbitrary `byId` entries. Ordinary, nonblank rows across connected workspaces are eligible. Archived conversations are excluded by default; the independent Include archived checkbox expands this scope. The Host independently excludes missing-cwd and subagent sessions, and excludes archives in the default scope, including candidates forged into the request. Workspace labels are display metadata only. This scope does not inherit another view's archive toggle.
-
-Archived results use a noninteractive row with an Archived label, matched snippet and explicit Unarchive and open button. The public `uiWorkspace.unarchiveSession` command is followed by a fresh, ready workspace/session snapshot check before opening. A successful RPC alone does not prove the session exists or the latest archive state has synchronized. An uncertain result stays in search with a retry message; confirmed unarchive followed by an open failure is reported separately. Only one restore RPC runs at a time. Changing query, mode or scope, closing search, choosing another result, or resetting the connection invalidates its automatic navigation. The public command has no cancellation signal: these actions do not undo a restore already sent, and the extension never automatically rearchives a conversation. Search scope changes discard prior results and continuation tokens.
-
-## Matching and transcript coverage
-
-A query is a trimmed literal substring of at most 500 UTF-16 code units, without null characters. Escaped `RegExp(..., 'giu')` uses the existing in-conversation matcher's locale-independent Unicode simple case folding, without normalization or full-fold expansion. Punctuation, quotes and code operators cannot become regex or SQL syntax. Chinese two-character substrings can match within longer Chinese text. Titles and body use the same rule.
-
-Body search includes append-origin `user/message` with `source.kind === 'user'`, and the last settled append-origin `assistant/message` for each turn/step. Step start or `llm/retry` clears an earlier settlement. This follows the official Chat transcript rather than the model's current surface: compaction-shadowed append text remains searchable, while model-only replacement copies, checkpoints, reasoning, tools, queued drafts and assistant attempts are excluded. The public append-transcript contract is documented in [session/surface.ts](https://github.com/deepseek-ai/deepseek-harness/blob/639ed015397290b3745d163aafe02ffee4aa3f84/packages/core/session/src/surface.ts#L78-L92). User text blocks are joined as the existing reader presents them; assistant text blocks stay separate.
-
-Body matching uses saved text including raw Markdown syntax. It does not promise to find a rendered phrase spanning formatting markers. Snippets and their exclusive-end UTF-16 ranges come from exactly the same text and immutable cut; the response also carries message ID, event seq, content index and observation cursor. The client validates ranges and renders text/mark nodes, never source HTML. These raw offsets are not DOM coordinates. Opening a result retains the reviewed conversation-find handoff and does not claim an exact snippet jump. If the selected conversation scope/projection has no match, its existing notice explains the difference and offers Return to search results.
-
-## Batches, consistency and limits
-
-Start freezes the client's ordered eligible IDs; catalog titles are fallback hints only. Native cold-list metadata can lack a title cache. In title/body mode, the latest `session/title` event from the same observation supplies the actual title; title-only uses the public `readTitleSnapshot(id, signal)` to obtain the saved title, without body matching. Returned titles replace missing or stale UI metadata in result rows. The Host processes at most eight candidates per request and yields between sessions; a 100 ms soft batch budget is checked between sessions, not represented as a hard latency bound. The client automatically requests successive batches, including empty ones, until roughly 20 additional results are displayed or every candidate is scanned. Continue requests the next result page, not each internal scan batch. Title/body results share scan order without a title-first truncation. Title-only does not call the body scanner or `observeSession`; the public title reader may still read a complete cold log internally. It cannot promise metadata-only I/O.
-
-A random request ID owns one in-memory search. Opaque continuation tokens bind its query, mode, fixed scope, protocol version and frozen candidates. Concurrent next requests receive 409. The preceding continuation response can be replayed without advancing again; replay rechecks visibility and expires with 410 if a returned conversation disappeared or became excluded by scope. Included archives retain a freshly checked archive flag on replay. Every page also rechecks visibility before sending snippets. This is a per-session scan, not a global instantaneous snapshot. Each conversation is read once per scan; new or edited conversations require a fresh search (Enter in the input). Historical pages already shown are not retroactively rewritten, but the client always filters displayed/opened rows against its current catalog.
-
-Failed reads preserve confirmed title matches and increment failure counts. Policy changes or hard per-session limits increment skipped counts. Complete scanning plus any failed/skipped count remains incomplete coverage; zero matches is asserted only with complete, failure-free coverage. The scanner caps one observation at 200,000 events and 32 Mi UTF-16 text units, and searches text in 65,536-unit chunks with overlapping boundaries and cancellation yields. These limits do not bound the Host's internal cold restore allocation: the public API still prepares a whole session, and its synchronous restore cannot be instantly interrupted. Very large sessions can therefore delay other work before the plugin gets control.
-
-Query/mode changes, Close, Stop, connection reset and scope withdrawal abort the HTTP read, invalidate a client generation and send a best-effort explicit cancellation for its own request ID. Leases are disposed in `finally`. Completed or confirmed partial result rows remain available for Back; a cancelled incomplete scan requires Retry. Successful results have no Retry action; Enter refreshes the query with composition/repeat guards. A search expires after five idle minutes, at most eight searches coexist, and a start accepts at most 100,000 unique candidates with bounded request/title sizes. The Host keeps only query/catalog state and one bounded replay page of snippets in memory; it clears state on cancel/disposal/expiry. Neither searches nor body snippets are logged or persisted by this plugin.
-
-## Verification for this candidate
-
-- Reproducible client build, Host/client syntax, registration, whitespace checks, and the existing 17 tests in `text-matching.test.mjs`, `bundle-registration.test.mjs`, and `client-registration-check.test.mjs` pass. No test files or assertions were added to the repository; no historical long CI or release matrix was run.
-- A bounded inline protocol exercise checks exact source ranges across chunk boundaries, Unicode/literal matching, append/replacement/retry selection, title preservation after read failure, idempotent cursor replay, query mismatch, archive invalidation, concurrent next rejection, explicit cancellation, title-only without observation, and lease disposal.
-- A real official RC2 service probe uses Session/JSONL cold fixtures and `SqliteSessionQueryEngine` with `openAt: never`; native FTS is confirmed disabled and no index file appears. Its 28 ordinary synthetic candidates (plus a separately rejected subagent candidate) include 24 title matches, an old body-only conversation, a 160-turn conversation with about 5.2 million text code units, literal code and unrelated text. A separate forged-candidate check includes a subagent. Chinese “问题” finds 26 ordinary conversations, including the old/long body-only hits; code punctuation, Unicode case matching, no-hit and title-only queries pass. After the cold-catalog title gap was found in browser acceptance, title matching was changed to public saved-title reads and rechecked with intentionally empty catalog titles. The forced subagent is skipped.
-- In that Node 24.19.0 service probe, title/body first batches took 82–129 ms and complete scans 331–772 ms; title-only public-title scans completed in 882–1047 ms. These sequential samples include cold and cached reads. A separate cold-read cancellation requested after 10 ms settled with HTTP 499 at 10 ms, and the next independent query passed. These are one small synthetic service measurement, not UI latency, production scale guarantees, or a benchmark. The default Web overlay does not enable FTS.
-
-An isolated official RC2 Web browser run with the default `openAt: never` configuration passed on 2026-10-12:
-
-- A single body query automatically scans all 28 ordinary conversations, finds both old/long body-only matches, and highlights the exact snippet text.
-- Cold titles appear without opening each conversation first. Result pagination reaches 26 matches (24 title matches plus two body-only matches); title-only reaches 24 and excludes the body-only query.
-- Successful results have no Retry action; Enter starts a fresh same-query scan. Stop reports incomplete coverage, and rapid query changes leave only the latest literal-code result.
-- Opening the 160-turn long conversation and returning preserves the query and input focus. The final client/Host artifact hashes were unchanged throughout this clean acceptance run.
-
-The compact-layout follow-up passed at 1180×757 and 501×403 in Chrome/Web. Input top position stayed at 44 px for empty, zero-match, two-result and paged results; the two-result card was 234 px high rather than a fixed empty panel. The 501 px view had no horizontal overflow. Expanded help and result lists scrolled separately; Stop, Retry and Load more stayed reachable. Tab trapping, Escape and return focus passed, with unchanged client/Host artifact hashes.
-
-Archived-search acceptance on the same isolated RC2 Web profile verified default exclusion, opt-in body/title matches with archive labels and snippets, and scope changes discarding excluded rows. Clicking archived title text left the durable archive state unchanged; keyboard activation of the explicit restore action unarchived the synthetic conversation and opened Chat with the query. Returning showed the ordinary row. The 501×323 view had no horizontal overflow and its actions remained reachable. Independent-entry Close/Escape returned focus; after restore → Back → Escape, the original trigger had been removed by navigation and focus fell to the page. No exact return-focus guarantee is made for that path.
-
-Bounded component/protocol checks additionally covered cross-scope cursor rejection, fresh archive flags on replay, deletion during replay, archive changes during reads, late old-scope responses, repeated restore activation, uncertain/rejected restore responses, confirmed restore followed by open failure, and navigation invalidation on Close/query/mode/scope/reset/another result. Delayed restore races and failure UI were not independently reproduced in the browser. The smallest actual browser width was 501 px; 320 px reflow remains unverified.
-
-No real read-failure UI was produced in browser acceptance; failure/partial behavior has the bounded component/protocol checks above. Dark mode, 360/390 px widths, compaction/retry history through the UI, and Electron Desktop remain unverified. Compaction/retry selection has the source-contract and bounded service/protocol evidence described above. The historical host-version matrix was not rerun.
-
----
-
-# Full-session search compatibility
-
-The unreleased full-session path targets the official DSH `0.2.0-rc.2` contract at [`639ed015`](https://github.com/deepseek-ai/deepseek-harness/tree/639ed015397290b3745d163aafe02ffee4aa3f84). The historical matrix below describes the pre-existing loaded/DOM-paging implementation; it is not acceptance evidence for this data-search path.
-
-## Durable read and lifecycle
-
-The plugin subscribes through `ctx.remote.session.follow`, captures the first snapshot cursor, closes that subscription, and pages older records with the same `throughSeq`. Every page must be ordered, unique and dense, meet the preceding boundary, and collectively cover `0..T`. `SessionFace.hasMore` is never used as proof of complete history. Read coverage, text-projection coverage, query scanning and the 5000-result display limit are independent states.
-
-Remote services are acquired in a Cordis child dependency scope. Missing or withdrawn services disable full-session search without preventing the existing loaded-only mode from mounting. Query, acquisition and navigation generations are separate. Closing, scope/session changes and disposal cancel owned work; changing a query reuses the current session's text cache. No persistence, worker or alternate reader is installed.
-
-## Text and original-Chat positioning
-
-Assistant Markdown is projected through the Host's public `MarkdownText` component with the Host's React 18 runtime and a bundled React DOM server renderer. Each source is rendered once into an inert, unmounted template, converted to independent UTF-16 text blocks, and released. Generated code does not bundle React or request images. The single checked-in client bundle is reproducible with `npm run build`; `npm run check:build` rejects a stale artifact.
-
-Saved source identity is retained separately from renderer offsets. Navigation uses the selected session's `loadThrough`, validates the native semantic node and content part, opens only the corresponding native disclosures, and compares complete text-block sequences before making a Range. React replacement nodes are revalidated during settling. Capped process fades and the find bar are excluded from the readable area. If a boundary prevents scrolling clear of the bar, a temporary in-panel displacement preserves its saved manual position; cancellation and user movement end that displacement.
-
-Match navigation uses the first non-empty Range fragment while highlighting the entire match. It leaves that fragment in place when the outer reading area has one measured line-height of space above and below; otherwise it centers the fragment in the reachable area above the composer and clear of the find bar. Inner code and process scrollers retain nearest alignment and their fade exclusions. At a history boundary, a readable fragment can succeed without the full margin.
-
-Before moving a match, navigation waits for the selected session to stop loading and uses the exact loaded Turn control, when mounted, to release the Host’s retained paging anchor. It then resolves the source again and checks measured geometry over successive polls. The [RC2 Turn navigator](https://github.com/deepseek-ai/deepseek-harness/blob/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-chat/src/client/chat/TurnNavigator.tsx) omits the rail for a single turn and virtualizes its marks. When the exact control is absent but the session is ready and the target Range is valid, navigation tries direct placement once; this does not establish a Host ownership handoff. If that placement is reversed, it reports the existing positioning failure without retrying the scroll or selecting another turn. Loading or unknown session state never permits a write.
-
-The Host exposes no navigation-completed event. After a native Turn action, the bounded geometry check permits an initial placement and one layout correction, then reports failure if the Host keeps moving the match back. A readable boundary can succeed without ideal centering. Reader input, a new query, closing Find, or a changed session cancels the attempt. Loaded-content text rescans wait for the attempt to finish and do not initiate another jump. The existing `loadThrough` request is awaited separately; its completion is not evidence that the rendered match has landed.
-
-Read, Diff, Search and supported terminal cards use validated first-party presentation data. Context follows the final RC2 Chat visibility filter: ordinary background context and system prompts are excluded; turn triggers and context containing tool changes use their native form and DOM markers. Saved but unrendered attempts/fields and Host display limits remain explicit navigation limitations. Authored image descriptions are independent saved-text results; images, OCR and attachment internals are excluded. Unknown required text types or unverified custom tool presentation report incomplete coverage rather than a false zero or complete count.
-
-## Build and verification scope
-
-The package version remains unchanged while the feature is under review. Packaging keeps the existing single classic-script client registration and introduces no required Host package. The final candidate must be verified with the bounded official-Host scenarios for data coverage, original-Chat landing, cancellation and return behavior; the prior release matrix is not automatically rerun or claimed.
-
----
-
-## Historical loaded-mode acceptance
-
-
-This implementation follows the approved [Issue #1 plan](https://github.com/Ryuu-64/dsh-find-all/issues/1#issuecomment-5933617888), with the accepted release scope and unverified Desktop limits recorded in [PR #9](https://github.com/Ryuu-64/dsh-find-all/pull/9). This does not promise compatibility with untested or future hosts. Issues #2–#8 are outside this change.
-
-## Contract research
-
-The adapter uses a `conversation.session.header.utilities` list entry. Its `sessionId` comes from the session standard props; it never consults the old global `sessions.list.current` field. Ctrl+F and the main header button search the current window's central main conversation. The registered header's actual button identifies that main frame and its view instance. A headerless sidebar, background session, unrelated control, or nested process flow does not become another search target merely because it is visible or receives focus. Body-focused Ctrl+F works without a preparatory click when one registered main frame is visible. If a host presents multiple registered main frames, a specific registered header/frame context is still required; ambiguous identity fails closed. Focus in the find bar, sidebar interaction, and sidebar closure preserve the main target.
-
-Official release-tag sources inspected:
-
-- [`0.1.5-rc.2` slot contract](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.5-rc.2/packages/client/ui-conversation/src/client/contract/slots.ts), [session standard props](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.5-rc.2/packages/client/ui-session/src/client/index.ts), and [header utility registration / `ctx.effect` example](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.5-rc.2/packages/session-query/session-log-export/src/client/index.ts)
-- [`0.1.5-rc.2` root](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.5-rc.2/packages/client/ui-conversation/src/client/skeleton/ConversationRoot.tsx) and [`0.1.5-rc.3` root](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.5-rc.3/packages/client/ui-conversation/src/client/skeleton/ConversationRoot.tsx): the header and one conversation scrollport share the `data-phase` root
-- [`0.1.6-alpha.2` main panel](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.6-alpha.2/packages/client/ui-conversation/src/client/skeleton/ConversationMainPanel.tsx) and [content](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.6-alpha.2/packages/client/ui-conversation/src/client/skeleton/ConversationContent.tsx): split components retain that root/scrollport structure
-- [`0.1.7-rc.2` content](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.7-rc.2/packages/client/ui-conversation/src/client/skeleton/ConversationContent.tsx), [`0.2.0-rc.1` content](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.1/packages/client/ui-conversation/src/client/skeleton/ConversationContent.tsx), and [`0.2.0-rc.2` content](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/client/ui-conversation/src/client/skeleton/ConversationContent.tsx): explicit content session identity is additionally checked
-- [`0.2.0-rc.2` slot registry](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/client/ui-renderer/src/client/registry.ts): slot injection and registration are context-owned effects
-
-The official [startup fixture](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/apps/web/tests/startup-auto-selection.e2e.ts) explicitly distinguishes the resident conversation root from the composer's unrelated `data-phase`. Routing skips that editor attribute. Unregistered Hero/settling and sidebar interactions do not leave a permanent rejection state. A visible modal dialog or an editor with its own find UI keeps ownership of its keyboard shortcuts.
-
-DOM attributes are implementation details, not a promised future host API. `resolveScope` is their single adapter boundary. It requires an active, connected, visible panel, exactly one registered session anchor, one scrollport, and one visible `data-chat-flow`. If explicit host session metadata exists, it must match. Search and mutation observation stay inside that flow. Identified nested process flows remain part of the outer main conversation; unrelated or ambiguous flows fail closed. Missing or hidden Chat content yields an explicit unavailable/no-searchable-content status, no results, and no paging. It never substitutes sidebar or whole-page text. There is no `document.body` or `window.find` fallback.
-
-`ctx.effect` owns global key/focus/pointer listeners and teardown. React effect cleanup removes each session anchor. Close/dispose cancels debounce, paging-start, paging-settle, session polling, observation, and highlights. An in-flight host request cannot be aborted through this API; its generation token prevents stale results from being painted or another page being requested. A real main-frame/session switch clears old highlights and the return origin, cancels plugin paging/navigation/recovery, and rebinds the new main. Identity includes the registered instance and public Node-store generation, not just a session ID; a new store for the same session and DOM invalidates the old work. A surviving frame whose header disappears remains unavailable rather than selecting an unrelated registered frame.
-
-Paging errors/stalls and manual stop retain rendered matches and explicitly label them incomplete. Existing matching and query behavior have not been redesigned.
-
-## Acceptance layers (do not conflate)
-
-1. **Logic and contract fixtures**: `npm run check` runs pure logic, registration, and React 18 + jsdom synthetic session tests. These assert old/new structural adapters, multiple views (including the same session twice), ambiguity, hidden/mismatched roots, scoped results, paging failure, in-flight switching, timer/highlight teardown, and no browser-wide fallback. Geometry is mocked in jsdom; this is not a real host/browser acceptance result.
-2. **Actual Web runtime + synthetic sessions**: installation of the same packed artifact, real module loader/slot rendering, paging, multiple view transitions and the host-supported disable/re-enable lifecycle must be recorded for each target release. A browser fixture alone cannot pass this layer.
-3. **Target Electron Desktop smoke**: the same artifact must be checked on the target Desktop build/OS. Web or jsdom success does not pass this layer.
-
-Historical scripted matrix targets: `0.1.5-rc.2`, `0.1.5-rc.3`, `0.1.6-alpha.1`, `0.1.6-alpha.2`, `0.1.7-alpha.1`, `0.1.7-alpha.2`, `0.1.7-rc.1`, `0.1.7-rc.2`, `0.2.0-rc.1`, `0.2.0-rc.2`. The separately verified `0.2.1-rc.2` Web run is recorded above; it does not rerun or expand that historical scripted matrix.
-
-The 2026-10-02 registry audit compared every published `@deepseek-ai/dsh` version with main's three peer requirements (`>=0.1.5-rc.2 <0.1.6-0 || >=0.1.6-0 <0.2.0-0`) using the official prerequisite rule. The original six-target sample accidentally excluded four releases that the old gate admitted: `0.1.6-alpha.1`, `0.1.7-alpha.1`, `0.1.7-alpha.2`, and `0.1.7-rc.1`. The ten-target candidate includes all currently published versions admitted by that old gate plus both current 0.2 release candidates. The user's Desktop 2.0.14 report identifies its bundled runtime as `0.1.7-rc.1`; Desktop marketing/version labels are not inferred to equal DSH runtime versions.
-
-The four added targets' official tagged slot, session props, conversation skeleton and HMR sources were inspected, and their vendor package pins are recorded in `scripts/compat/vendor-versions.json`. Links: [0.1.6-alpha.1](https://github.com/deepseek-ai/deepseek-harness/tree/dsh-v0.1.6-alpha.1/packages/client), [0.1.7-alpha.1](https://github.com/deepseek-ai/deepseek-harness/tree/dsh-v0.1.7-alpha.1/packages/client), [0.1.7-alpha.2](https://github.com/deepseek-ai/deepseek-harness/tree/dsh-v0.1.7-alpha.2/packages/client), [0.1.7-rc.1](https://github.com/deepseek-ai/deepseek-harness/tree/dsh-v0.1.7-rc.1/packages/client).
-
-Every candidate must pass the same new tgz in real Web acceptance, including first Ctrl+F with body focus and no preparatory anchor click. Previous artifact results cannot validate changed production bytes. Desktop acceptance is separately recorded, including a Windows Web run for platform-specific harness behavior. The exact peer list enables verification without exemptions; it is not a passed support matrix. The historical `dshReleases` record is unchanged. Before release, failures must be fixed or clearly documented; removing a previously accepted target requires an explicit reviewed compatibility decision, not silent narrowing.
-
-The official [compatibility evaluator](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/boot/app-boot/src/plugin-compatibility.ts) uses `semver.satisfies(..., { includePrerelease: true })`. Do not infer its results from ordinary npm semver behavior. Do not remove peer requirements or grant an exemption to make the matrix appear green.
-
-## Reproduction
-
-```sh
-npm ci --ignore-scripts --legacy-peer-deps
-npm run check
-npm_config_cache=/tmp/find-all-npm-cache npm run verify:release
-npm pack --ignore-scripts --pack-destination /tmp/find-all-candidate
-# Extract this one tgz, retain its SHA-256, then verify its registration bytes:
-node scripts/check-client-registration.mjs /tmp/find-all-candidate/package
-```
-
-`--legacy-peer-deps` here is only for isolated development test dependencies; it is not a host installation result or exemption. Test sessions must be synthetic, with no user data or model credentials. Do not change the artifact between version runs. Unknown future host versions need fresh regression evidence before changing support metadata.
-
-## Host lifecycle boundary
-
-The official HMR client in [0.1.5-rc.2](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.5-rc.2/packages/client/hmr/src/client/index.ts) and [0.1.5-rc.3](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.5-rc.3/packages/client/hmr/src/client/index.ts) deliberately ignores graph changes after initial load. These hosts and [0.1.6-alpha.1](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.6-alpha.1/packages/client/hmr/src/client/index.ts) require a page refresh or application restart after enabling/disabling a plugin. We do not patch the host or claim hot unload works there. Their acceptance checks wait for the actual server graph change, then verify disabled/restored behavior after an explicit refresh.
-
-The inspected HMR clients in [0.1.6-alpha.2](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.6-alpha.2/packages/client/hmr/src/client/index.ts), [0.1.7-rc.2](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.1.7-rc.2/packages/client/hmr/src/client/index.ts), [0.2.0-rc.1](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.1/packages/client/hmr/src/client/index.ts), and [0.2.0-rc.2](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/client/hmr/src/client/index.ts) synchronize graph entries. The newly inspected 0.1.7-alpha.1, alpha.2 and rc.1 use the same `entries.sync` mechanism. Their acceptance checks require two real hot disable/re-enable cycles with zero page navigations. Every target must also pass actual search, history paging, and A/B/A session switching using the same candidate tgz. See the PR's linked CI evidence for run-specific results and artifact hashes; pending matrix entries are not passes. All Electron Desktop targets remain unverified until separately recorded.
-
-## Windows validation isolation
-
-The runner preserves its real `USERPROFILE`; DSH state and Electron `--user-data-dir` use owned temporary directories. A bounded no-inspector comparison changes only `USERPROFILE` (with separate evidence log filenames) before the UI smoke. It records crash/survival, not a UI pass. No real user profile, credentials, sandbox or security policy is changed. Windows Web validation invokes the npm `.cmd` shim through PowerShell with literal arguments and imports resolved modules through `pathToFileURL`.
-
-## Simultaneous embedded sidebar boundary
-
-The official rc2 [SidebarChatTab](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/client/ui-subagent/src/client/sidebar-chat/index.tsx) renders an embedded ConversationContent with `data-conversation-content`, `data-conversation-session` and `data-content-phase`, without the main panel's `data-phase` or a session header utility. This embedded view is excluded from main-frame selection and search. Opening, focusing, clicking, or closing it preserves the central main target. Its text cannot enter the results, and a sidebar without any main Chat body reports unavailable. Fixtures retain strict checks for multiple registered main identities, Hero/settling/unknown main phases, hidden utilities, and mismatched content metadata.
-
-The current rc2 real-host case authors a completed one-shot child with the official persisted header/descriptor/catalog pattern from [subagent-conversation.e2e.ts](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/apps/web/tests/subagent-conversation.e2e.ts), opens the host's actual right-sidebar control, and natively re-enables the plugin with both views visible. It requires neutral Ctrl+F and the main header button to search main A with both views open, sidebar interaction and closure to preserve that target, and a sidebar-only query to produce no main results. No model is called and no second DOM pane is fabricated. The CI result for each artifact determines whether this case passed.
-
-## Return to reading position (development)
-
-The Issue #15 implementation is a draft. Unit geometry fixtures cover state transitions, not real Web or Electron acceptance. The separate `Return reading position RC2` workflow installs one candidate artifact into the official exact `0.2.0-rc.2` Web runtime and records semantic identities, text positions, measured geometry, native input, and screenshots. Its result must be inspected; defining a workflow is not a pass. Older supported hosts and Electron remain unverified for this new feature. The npm version and existing release artifact are unchanged.
-
-A closed-to-open transition captures one origin before the input receives focus. The origin belongs to the exact header instance, session, root, public Node store, and SessionFace. It records the exact `data-chat-anchor-key` part, original Node key, sequence, a text offset inside that part, and the visible text's viewport offset. Text is re-resolved inside that same semantic part after re-rendering. An ambiguous edited passage fails; identical text in another message cannot substitute. Native group-body scrolling is measured separately. The origin is not persisted to web storage.
-
-The public `useChat` session-standard hook supplies the stable Node store ([rc2 slots](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/client/ui-chat/src/client/contract/slots.ts), [Node store](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/client/ui-chat/src/client/contract/snapshot.ts)). Its `get` includes loaded hidden Nodes. A loaded Node with no visible DOM waits for rendering or uses its actual host disclosure controls; it does not trigger history paging. Missing data may request bounded older pages through the existing deduplicated `SessionFace.loadOlder` path. The public snapshot does not expose the actual history-window lower bound, so absence alone does not prove deletion. A cancelled plugin recovery cannot abort an already-started host request and retains its deduplication record until settlement.
-
-The DOM attributes are version-specific implementation details, not a newly promised SDK. The [rc2 Node seat](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/client/ui-chat/src/client/chat/ChatNodeSeat.tsx) assigns distinct anchor keys to the parts of one Node. The [group seat](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/client/ui-chat/src/client/chat/ChatGroupSeat.tsx) retains hidden content and nests a process-body flow. The adapter allows those identified nested process flows inside one outer flow; unrelated or ambiguous flows still fail closed. Embedded sidebars remain excluded from that main-conversation scope.
-
-A return makes one immediate landing and then verifies the same text is actually visible after host scroll sampling. It does not claim success from a scroll call. During unchanged layout it also verifies the restored offset; layout changes prioritize the original text remaining visible. Success closes the bar, removes highlights and the origin, restores an appropriate surviving focus without scrolling, and announces completion. Recoverable failure leaves the bar and origin available for retry. Close, session/view change, new result navigation, reader input, and disposal cancel recovery; every wait and actual scroll rechecks identity.
-
-One rc2 host limitation requires real-runtime evidence: [ChatNavigation.loadEarlier](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/client/ui-chat/src/client/chat/use-chat-navigation.ts) retains a paging anchor, and [ChatViewport](https://github.com/deepseek-ai/deepseek-harness/blob/dsh-v0.2.0-rc.2/packages/client/ui-chat/src/client/chat/use-chat-viewport.ts) may reapply it after external scrolling. `chatScroll` is only a Chat-injected read/save store, not a plugin live capture/restore API. This plugin neither imports private Chat controllers, synthesizes reader events, repeatedly fights the host's scrolling, nor replaces Chat. Native Load earlier followed by pointer/Enter/Space return and later stream/layout growth are explicit acceptance cases. A host path that pulls the view away must report failure and keep Issue #15 open.
-
-### RC2 Web evidence (2026-10-04)
-
-[Run 37183990650](https://github.com/Ryuu-64/dsh-find-all/actions/runs/37183990650), commit `b0dc12e`, installed the exact official RC2 runtime and one candidate artifact. Ordinary pointer, Enter, and Space return cases passed: the same semantic Node/part, paragraph, and text offset returned from a long response with Range top `4px` before and after. These were real trusted browser inputs. A `1400→1120` viewport change did not change the fixed-width text column, so this run does not establish text-reflow acceptance.
-
-The three cases after the host's own **Load earlier** completed all failed. The rendered Node count grew from `100` to `200` before the return command; the original passage moved from top `4px` to `7589px` instead of being restored. Each real return input originated outside the scrollport, and the host reapplied its retained paging anchor. The plugin kept the find bar open and reported the failed landing. The workflow remains failed; these cases are not waived or marked complete.
-
-[Run 37185149672](https://github.com/Ryuu-64/dsh-find-all/actions/runs/37185149672), commit `8d65ce6`, additionally passed actual responsive text reflow: the viewport changed from `1400px` to `560px`, the original paragraph's height changed from `96px` to `144px`, and its Range top remained `4px` after returning to the same Node, text offset, and paragraph. The `700px` intermediate width did not reflow that paragraph and was not counted as reflow evidence.
-
-The same run passed real streaming through the official replay provider, agent, and SSE. Search began while the host followed the tail; another `1140` characters arrived during search without pulling the reader back. After a live paragraph reflowed from `24px` to `48px`, return restored the same Node, text offset, and paragraph at `7px`. Further stream growth kept that position and increased the distance from the tail from `2624px` to `3456px`; the stream then completed.
-
-All three native Load earlier cases still failed on their first return attempt. The fixture retained those failures, then separately sent a real reader wheel movement and retried the same return button. Pointer, Enter, and Space retries all recovered the saved semantic passage with `0px` offset error. A real reader scroll can therefore release this host state before retrying; it does not make the original automatic return pass. The workflow remains red, and no synthetic reader event or repeated scroll-write loop was added to the plugin. Electron, the other admitted Web runtime versions, and the full real-runtime failure/accessibility matrix remain unverified for this feature.
-
-The earlier failures establish a limit in the original adapter, not proof that the host must change. A plugin-only route is now being tested: wait for public history loading and Chat's rendered history control to settle, activate a scoped **loaded** Turn navigation button through its normal click handler, then locate and verify the original text. The official RC2 handler cancels prior paging/navigation before landing. This uses existing UI behavior, not a new SDK call, private-controller import, synthetic reader event, or replacement Chat. Whether it satisfies the remaining acceptance cases is decided by exact-host tests; an upstream change is not currently assumed necessary.
-
-[Run 37190287282](https://github.com/Ryuu-64/dsh-find-all/actions/runs/37190287282), commit `bdd1524`, passed 11 of the 12 existing RC2 scenarios, including all three native paging returns, two repeated paging cycles, reflow, streaming, and wheel/query/Escape cancellation of pending returns. Multiwindow search failed before the second return could be exercised. The explicit-context runner correction preserved every scenario and assertion.
-
-[Diagnostic run 37207453256](https://github.com/Ryuu-64/dsh-find-all/actions/runs/37207453256), commit `459f468`, records the second window's focus sequence: its restored conversation composer receives focus; session-search controls then receive pointer/focus input outside that conversation; immediately before Ctrl+F the active element is `BODY`, while one visible registered header and one Chat flow still identify the same session. That revision cleared prior selection on outside interaction and forbade neutral body rediscovery after rejection. Its wheel-based selection change was an intermediate attempt, not the current search-target contract. The current correction keeps the central registered main frame through outside/sidebar interaction, supports body Ctrl+F directly, and invalidates old work on an actual frame or store-generation change. Strict scope and instance checks remain. The updated unit fixtures and real-host sidebar expectations do not themselves establish Web or Desktop acceptance; the unchanged multiwindow return scenario and the updated sidebar cases must run against the corrected artifact before acceptance can be claimed.
+# Compatibility and verification
+
+## Supported host
+
+Exactly one host is supported: official DSH `0.2.1-rc.5`.
+
+All four peer requirements declare only that version:
+
+- `@deepseek-ai/dsh-api-session-controller`
+- `@deepseek-ai/dsh-client-ui-chat`
+- `@deepseek-ai/dsh-client-ui-conversation`
+- `@deepseek-ai/dsh-client-ui-primitives`
+
+`0.2.1-rc.4`, plain `0.2.1`, every earlier release and every future release are
+rejected by the official compatibility evaluator. There is no `engines.dsh`
+override and no exact-version exemption.
+
+Version `0.2.0` of this plugin removed the multi-version declarations and the
+compatibility code paths that only existed for older hosts. The plugin imports
+Host UI modules and version-specific DOM anchors, so an untested host is treated
+as unsupported rather than admitted by range.
+
+## Host contract used
+
+| Surface | Use |
+| --- | --- |
+| `sessionQuery.listSessions` / `observeSession` / `readTitleSnapshot` | Host-side cross-conversation reads, never a second database or index |
+| `connection.fetch.register` | Authenticated `POST /api/dsh-find-all/search` |
+| `remote.session.follow` / `page` | Durable whole-conversation reads by `throughSeq` |
+| `workspaceRegistry.archivedSessionIds`, `uiWorkspace.unarchiveSession` | Archive exclusion, explicit restore |
+| `conversation.session.header.utilities` | Find button in the Session header |
+| `sidebar.footer.action` | `对话全文搜索` / `Full-text conversation search` entry |
+| `ui-primitives` `Modal`, `Button`, `Input`, `Checkbox`, `MarkdownText`, `writeClipboard` | Native controls and renderer-faithful text projection |
+| `uiConversation.userText.createEvaluator()` and the public Slot inspection | Default-masked user text and renderer guard |
+| `data-phase`, `data-conversation-content[data-conversation-session]`, `data-conversation-scroll`, `data-chat-flow`, `data-chat-anchor-key`, `data-chat-turn`, `data-clock` | Scope isolation, navigation and text extraction |
+
+## Verification (2026-11-01)
+
+- `node scripts/build-client.mjs --check`: reproducible bundle from `src/`.
+- `node --test "test/**/*.test.mjs"`: **134 passed, 0 failed**.
+- `scripts/check-client-registration.mjs`: the bundle registers
+  `@ryuu-64/dsh-find-all`.
+- Production client bundle SHA-256:
+  `b84a1f65c0d760647e1aebfdd3bc0c60d5a4c66eeddb88adba216456fb995c12`.
+- Isolated official `0.2.1-rc.5` Web profile (`DSH_HOME` under a temporary
+  directory, bundled Desktop runtime commit `d4db512`):
+  `dsh plugin --profile web add <candidate.tgz>` installed `0.2.0`, and
+  `window.__DSH_BOOT__` listed `@ryuu-64/dsh-find-all`.
+- Real Chrome run on that profile:
+  - the sidebar `对话全文搜索` entry rendered;
+  - searching `FIND_ALL_A_USER_001` returned exactly one conversation with the
+    title and the matching body snippet;
+  - opening that result retained the query, opened the conversation and showed
+    `1 个结果` in the current-conversation find bar;
+  - no console or page errors were recorded.
+- Host route with two synthetic 80-turn sessions: `scanned: 2`,
+  `complete: true`, `failed: 0`, one body match with the exact snippet and
+  UTF-16 range `0–19`.
+- The same route rejects unauthenticated requests and does not enable the
+  optional SQLite full-text index.
+
+## Unverified boundaries
+
+- Packaged Electron/Tauri installers, Windows registry integration and other
+  operating systems were not exercised.
+- Any host other than `0.2.1-rc.5` is unsupported by declaration.
+- Whole-history navigation beyond the retained-query handoff, default-masked
+  secret reveal invalidation, archived-search UI and the plugin-manager
+  disable/enable cycles were not rerun for this cleanup.
+- The historical desktop/Windows acceptance harness and its evidence were
+  removed with the old host targets; this document is the single current
+  record.
+
+No npm publication is implied by this review.

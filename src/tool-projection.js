@@ -1,4 +1,4 @@
-// Runtime validators mirror the RC2 first-party tool-card eligibility contract.
+// Runtime validators mirror the current first-party tool-card eligibility contract.
 // deepseek-harness 639ed015, ui-tool/models/{diff,search,terminal}-card-model.
 // Only persisted presentation fields are read; no Host-only value imports.
 const record=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);

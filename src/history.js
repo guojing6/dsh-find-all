@@ -1,6 +1,6 @@
 import { prepareContext, finishContext, projectInboxSplice, createContextClassifier } from "./context.js";
 
-// Durable full-history reader for the official DSH 0.2.0-rc.2 protocol.
+// Durable full-history reader for the supported official DSH protocol (0.2.1-rc.5).
 // Reference: deepseek-harness 639ed015397290b3745d163aafe02ffee4aa3f84.
 // This cache belongs to ONE session + generation. It never owns a query, a DOM
 // window, or the model's compacted surface. Only append-origin transcript text
@@ -9,7 +9,7 @@ import { prepareContext, finishContext, projectInboxSplice, createContextClassif
 
 const TEXT_TYPES = new Set(["text", "reasoning"]);
 const BOUNDARIES = new Set(["assistant/message", "tool/call", "tool/result", "llm/retry", "turn/end", "turn/start"]);
-// Explicit RC2 non-body vocabulary. Known is not synonymous with searchable:
+// Explicit non-body vocabulary. Known is not synonymous with searchable:
 // other visible body schemas below are reported as coverage gaps, not skipped.
 const NON_BODY_EVENTS = new Set([
 	"agent-preset/selected", "agent/inbox/spliced", "approval/asked", "approval/decided", "approval/policy",
@@ -179,7 +179,7 @@ export function assembleAttemptText(stream, seq) {
 
 function extractEntry(event, sessionId, report) {
 	const { seq, type } = event;
-	// RC2 final Chat flow excludes system prompts. Never extract their body or request configuration.
+	// The final Chat flow excludes system prompts. Never extract their body or request configuration.
 	if (type === "system/message") return null;
 	const data = object(event.data) ? event.data : {};
 	const entry = { seq, type, sources: [] };
