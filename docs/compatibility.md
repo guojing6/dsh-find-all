@@ -29,7 +29,7 @@ untested host is treated as unsupported rather than admitted by range.
 | `conversation.session.header.utilities` | Find button in the Session header |
 | `sidebar.footer.action` | Hidden mount point for the search Modal; no visible footer entry remains |
 | Workspaces section header (`[class*="_sectionHeader"]`, host `搜索会话` / `Search sessions` button) | The host button is swapped inside its existing search slot, so the header layout (label, filter, add-workspace actions) is unchanged; works in the expanded sidebar and in the collapsed rail |
-| Host `session.search` chord (`Ctrl+K` / `Cmd+K`) | Intercepted in the capture phase before the Host bubble handler; opens the plugin search |
+| Host `session.search` chord (`Ctrl+K` / `Cmd+K`) | Web: intercepted in the capture phase before the Host bubble handler. Desktop: the shell routes matched chords natively to `session.search`; the plugin detects the Host inline search expanding, collapses it and opens its own search |
 | `ui-primitives` `Modal`, `Button`, `Input`, `Checkbox`, `MarkdownText`, `writeClipboard` | Native controls and renderer-faithful text projection |
 | `uiConversation.userText.createEvaluator()` and the public Slot inspection | Default-masked user text and renderer guard |
 | `data-phase`, `data-conversation-content[data-conversation-session]`, `data-conversation-scroll`, `data-chat-flow`, `data-chat-anchor-key`, `data-chat-turn`, `data-clock` | Scope isolation, navigation and text extraction |
@@ -44,14 +44,14 @@ dialogs are unaffected.
 ## Verification (2026-11-01)
 
 - `node scripts/build-client.mjs --check`: reproducible bundle from `src/`.
-- `node --test "test/**/*.test.mjs"`: **138 passed, 0 failed**.
+- `node --test "test/**/*.test.mjs"`: **140 passed, 0 failed**.
 - `scripts/check-client-registration.mjs`: the bundle registers
   `@ryuu-64/dsh-find-all`.
 - Production client bundle SHA-256:
-  `77f8b97d2dcf20f63d0d2ed05dc07921d14792f19714cf38df6bd6d1493c97c8`.
+  `62f8c0cc748b90081bb7a58ce04029856d019524613e89236f72ceb95c39007d`.
 - Isolated official `0.2.1-rc.5` Web profile (`DSH_HOME` under a temporary
   directory, bundled Desktop runtime commit `d4db512`):
-  `dsh plugin --profile web add <candidate.tgz>` installed `0.2.2`, and
+  `dsh plugin --profile web add <candidate.tgz>` installed `0.2.3`, and
   `window.__DSH_BOOT__` listed `@ryuu-64/dsh-find-all`.
 - Real Chrome run on that profile:
   - the Workspaces header shows the plugin entry in the Host search icon's
@@ -61,6 +61,10 @@ dialogs are unaffected.
     plugin and `x = 16` after temporarily restoring the Host button, so the
     slot, filter and add-workspace actions do not move;
   - `Ctrl+K` opens the plugin search Modal instead of the Host session search;
+  - simulating the Desktop path (running the Host `session.search` button
+    programmatically) is redirected: the Host inline search collapses and the
+    plugin Modal opens, so the shell's native chord routing also ends in the
+    plugin surface;
   - clicking the header entry opens the same Modal; searching
     `FIND_ALL_A_USER_001` returned one conversation with its title and body
     snippet;
@@ -80,7 +84,7 @@ dialogs are unaffected.
   operating systems were not exercised.
 - Any host other than `0.2.1-rc.5` is unsupported by declaration; the header
   replacement is explicitly coupled to its DOM.
-- Whole-history navigation beyond the retained-query handoff, default-masked
+- Directly driven native keystrokes in the packaged Desktop shell, whole-history navigation beyond the retained-query handoff, default-masked
   secret reveal invalidation, archived-search UI and the plugin-manager
   disable/enable cycles were not rerun for this change.
 - The historical desktop/Windows acceptance harness and its evidence were

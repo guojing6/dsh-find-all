@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.3
+
+- Fix `Ctrl+K` / `Cmd+K` in the packaged Desktop app: the Electron shell consumes matched shortcut chords before the page and dispatches the Host `session.search` command, so a page-level key listener never ran.
+- The plugin now watches for the Host inline search expanding, collapses it with an Escape event and opens the full-text search instead. The Web path (page keydown capture) is unchanged.
+- Rebuild the bundle (SHA-256 `62f8c0cc748b90081bb7a58ce04029856d019524613e89236f72ceb95c39007d`); 140 tests pass.
+- Verify on an isolated official `0.2.1-rc.5` Web profile: `Ctrl+K` opens the plugin Modal, and simulating the Desktop command path (running the Host search button programmatically) is redirected and the Host inline search collapses; search results unchanged, no console errors.
+- Directly driven native keystrokes in the packaged Desktop app and other hosts remain unverified.
+
 ## 0.2.2
 
 - Fix the Workspaces section label (`工作区`) shifting right after 0.2.1: the plugin now swaps the host search button inside its existing slot instead of hiding the slot, so the header's flex layout is untouched.

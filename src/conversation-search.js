@@ -391,7 +391,7 @@ export function installConversationSearch(ctx, react, ui, bridge) {
   ctx.effect(() => {
     if (typeof document === 'undefined' || !document.body || typeof window === 'undefined') return;
     const mac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform || '');
-    const stop = installWorkspaceEntry(document, () => { if (!open) show(); }, L.title, `${L.title} (${mac ? '⌘K' : 'Ctrl+K'})`);
+    const stop = installWorkspaceEntry(document, () => { if (!open) show(); }, L.title, `${L.title} (${mac ? '⌘K' : 'Ctrl+K'})`, () => open);
     const keydown = (event) => {
       if (open || !isWorkspaceSearchShortcut(event) || hasOpenDialog(document)) return;
       show();

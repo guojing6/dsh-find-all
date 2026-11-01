@@ -35,6 +35,24 @@ export function hasOpenDialog(document) {
 }
 
 /**
+ * Desktop shells consume matched shortcut chords before the page sees them and
+ * dispatch the Host command (session.search) instead. When the Host's inline
+ * search expands, collapse it and open the plugin surface instead.
+ * @returns whether an expanded Host search was redirected.
+ */
+export function redirectExpandedHostSearch(document, isOpen, open) {
+	const slot = document.querySelector('[class*="_searchSlotExpanded"], [class*="_searchExpanded"]');
+	if (!slot || isOpen()) return false;
+	const input = slot.querySelector("input");
+	const view = document.defaultView;
+	if (input && view?.KeyboardEvent) {
+		input.dispatchEvent(new view.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+	}
+	open();
+	return true;
+}
+
+/**
  * Replace the host's Workspaces-header search button with the plugin entry.
  * The entry takes the button's exact place inside the existing search slot, so
  * the header's label/action alignment is unchanged.
@@ -44,7 +62,7 @@ export function hasOpenDialog(document) {
  * @param hint - optional tooltip text (defaults to the label).
  * @returns disposer restoring the host button and removing injected nodes.
  */
-export function installWorkspaceEntry(document, open, label, hint = label) {
+export function installWorkspaceEntry(document, open, label, hint = label, isOpen = () => false) {
 	const view = document.defaultView;
 	const style = document.createElement("style");
 	style.setAttribute("data-find-all-workspace-style", "");
@@ -87,6 +105,7 @@ export function installWorkspaceEntry(document, open, label, hint = label) {
 			if (!container || container.querySelector(`[${ENTRY}]`)) continue;
 			container.insertBefore(button(), host);
 		}
+		redirectExpandedHostSearch(document, isOpen, open);
 	};
 
 	// Coalesce re-renders: streaming single mutations would otherwise run the
@@ -101,7 +120,7 @@ export function installWorkspaceEntry(document, open, label, hint = label) {
 		}, 0);
 	};
 	const observer = view?.MutationObserver ? new view.MutationObserver(schedule) : null;
-	observer?.observe(document.documentElement, { childList: true, subtree: true });
+	observer?.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
 	sync();
 
 	return () => {

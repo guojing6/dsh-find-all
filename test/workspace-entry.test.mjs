@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { JSDOM } from "jsdom";
-import { installWorkspaceEntry, isWorkspaceSearchShortcut, hasOpenDialog } from "../src/workspace-entry.js";
+import { installWorkspaceEntry, isWorkspaceSearchShortcut, hasOpenDialog, redirectExpandedHostSearch } from "../src/workspace-entry.js";
 
 function addHeader(document, label = "搜索会话") {
   const header = document.createElement("div");
@@ -85,4 +85,29 @@ test("an open Host dialog keeps the shortcut away from the plugin", () => {
   assert.equal(hasOpenDialog(document), true);
   const { document: empty } = new JSDOM("<!doctype html><body></body>").window;
   assert.equal(hasOpenDialog(empty), false);
+});
+
+test("desktop-style host search expansion is collapsed and redirected", () => {
+  const { document } = new JSDOM('<!doctype html><body><div class="GAkraW_searchSlot GAkraW_searchSlotExpanded"><input></div></body>').window;
+  const input = document.querySelector("input");
+  let escaped = 0, opened = 0;
+  input.addEventListener("keydown", (event) => { if (event.key === "Escape") escaped += 1; });
+  assert.equal(redirectExpandedHostSearch(document, () => false, () => { opened += 1; }), true);
+  assert.equal(escaped, 1);
+  assert.equal(opened, 1);
+  assert.equal(redirectExpandedHostSearch(document, () => true, () => { opened += 1; }), false);
+  assert.equal(opened, 1);
+});
+
+test("installer redirects a host-expanded search observed after mount", async () => {
+  const { document } = new JSDOM("<!doctype html><body></body>").window;
+  let opened = 0;
+  const stop = installWorkspaceEntry(document, () => { opened += 1; }, "对话全文搜索");
+  const header = addHeader(document);
+  await tick();
+  const slot = header.querySelector(".GAkraW_searchSlot");
+  slot.classList.add("GAkraW_searchSlotExpanded");
+  await tick();
+  assert.equal(opened, 1);
+  stop();
 });
