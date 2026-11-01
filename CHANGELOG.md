@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1
+
+- Move the full-text conversation search entry from the sidebar footer into the Workspaces section header, replacing the host's session-search button.
+- Take over `Ctrl+K` / `Cmd+K` so it opens the plugin search instead of the host session search; other shortcuts and dialogs are left alone.
+- Keep the entry mounted in both the expanded sidebar and the collapsed rail, re-mounting after Host re-renders.
+- Rebuild the bundle for the new surface (SHA-256 `74ddd8e99857d13a7538b3ac8ea61d0ae9b08f38cdcee2fe6504555fbaf9c5e9`); 138 tests pass.
+- Verify on an isolated official `0.2.1-rc.5` Web profile: header entry in wide and rail layouts, Host search button hidden, `Ctrl+K` opens the plugin Modal, cross-conversation search and handoff unchanged, no console errors.
+- Not verified: packaged Electron/Tauri installers, other host versions, masked-secret reveal and archived-search UI.
+
 ## 0.2.0
 
 - Support only official DSH `0.2.1-rc.5`. All four peer requirements now declare exactly that version; every earlier declared host, `0.2.1-rc.4` and future releases are no longer admitted.

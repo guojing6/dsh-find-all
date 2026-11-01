@@ -1,5 +1,7 @@
 // Explicit, cancellable Host batches. No session activation until a row is opened.
 // Document-relative, like official session-log-export, for hosted subpaths.
+import { installWorkspaceEntry, isWorkspaceSearchShortcut, hasOpenDialog } from "./workspace-entry.js";
+
 const ENDPOINT = "api/dsh-find-all/search";
 const DEFAULT_SCOPE = "ordinary-unarchived", ARCHIVED_SCOPE = "ordinary-including-archived";
 const PAGE_MATCH_TARGET = 20;
@@ -379,15 +381,26 @@ export function installConversationSearch(ctx, react, ui, bridge) {
         h('div', { id: helpId, hidden: !helpOpen, className: 'dsh-find-all-conversations-help-content' },
           h('p', null, L.scopeDetails), h('p', null, L.order), h('p', null, L.snapshot), h('p', null, L.semantics), h('p', null, L.handoff))));
   }
-  function Entry(props) {
+  // The search surface itself is a Host-portalled Modal; this hidden slot entry
+  // only owns its mount point. The visible entry lives in the Workspaces header.
+  function SearchPanelHost() {
     react.useSyncExternalStore(listener => { listeners.add(listener); return () => listeners.delete(listener); }, () => revision);
-    const Icon = ui.IconSearchOutlineRegular;
-    return h(react.Fragment, null,
-      h(ui.Button, { type: 'button', size: 'sm', variant: 'ghost', title: notice || L.title, 'aria-label': L.title, onClick: () => show(), style: { width: '100%', justifyContent: props.wide ? 'flex-start' : 'center', gap: 8 } }, Icon ? h(Icon, { size: 16 }) : null, props.wide ? L.title : null),
-      notice && !open ? h('div', { role: 'status', style: { fontSize: 12, padding: 8, overflowWrap: 'anywhere' } }, notice) : null,
-      open ? h(Panel) : null);
+    return open ? h(Panel) : null;
   }
-  ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({ name: 'sidebar.footer.action', id: 'dsh-find-all-search', order: 10 }, Entry));
+  ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({ name: 'sidebar.footer.action', id: 'dsh-find-all-search', order: 10 }, SearchPanelHost));
+  ctx.effect(() => {
+    if (typeof document === 'undefined' || !document.body || typeof window === 'undefined') return;
+    const mac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform || '');
+    const stop = installWorkspaceEntry(document, () => { if (!open) show(); }, L.title, `${L.title} (${mac ? '⌘K' : 'Ctrl+K'})`);
+    const keydown = (event) => {
+      if (open || !isWorkspaceSearchShortcut(event) || hasOpenDialog(document)) return;
+      show();
+      if (open) { event.preventDefault(); event.stopPropagation(); }
+    };
+    window.addEventListener('keydown', keydown, true);
+    return () => { window.removeEventListener('keydown', keydown, true); stop(); };
+  });
+
   if (typeof ctx.inject === 'function') ctx.inject(['uiWorkspace', 'workspaces', 'layout'], child => {
     child.effect(() => {
       if (typeof child.uiWorkspace?.openSession !== 'function' || typeof child.layout?.panelInfo?.subscribe !== 'function' || typeof child.layout?.panelInfo?.getSnapshot !== 'function' || typeof child.workspaces?.list?.subscribe !== 'function' || typeof ctx.sessions?.list?.subscribe !== 'function') return;

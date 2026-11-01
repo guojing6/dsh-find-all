@@ -15,10 +15,8 @@ All four peer requirements declare only that version:
 rejected by the official compatibility evaluator. There is no `engines.dsh`
 override and no exact-version exemption.
 
-Version `0.2.0` of this plugin removed the multi-version declarations and the
-compatibility code paths that only existed for older hosts. The plugin imports
-Host UI modules and version-specific DOM anchors, so an untested host is treated
-as unsupported rather than admitted by range.
+The plugin imports Host UI modules and version-pinned DOM anchors, so an
+untested host is treated as unsupported rather than admitted by range.
 
 ## Host contract used
 
@@ -29,44 +27,59 @@ as unsupported rather than admitted by range.
 | `remote.session.follow` / `page` | Durable whole-conversation reads by `throughSeq` |
 | `workspaceRegistry.archivedSessionIds`, `uiWorkspace.unarchiveSession` | Archive exclusion, explicit restore |
 | `conversation.session.header.utilities` | Find button in the Session header |
-| `sidebar.footer.action` | `对话全文搜索` / `Full-text conversation search` entry |
+| `sidebar.footer.action` | Hidden mount point for the search Modal; no visible footer entry remains |
+| Workspaces section header (`[class*="_sectionHeader"]`, host `搜索会话` / `Search sessions` button) | Replaced in place by the plugin search entry; works in the expanded sidebar and in the collapsed rail |
+| Host `session.search` chord (`Ctrl+K` / `Cmd+K`) | Intercepted in the capture phase before the Host bubble handler; opens the plugin search |
 | `ui-primitives` `Modal`, `Button`, `Input`, `Checkbox`, `MarkdownText`, `writeClipboard` | Native controls and renderer-faithful text projection |
 | `uiConversation.userText.createEvaluator()` and the public Slot inspection | Default-masked user text and renderer guard |
 | `data-phase`, `data-conversation-content[data-conversation-session]`, `data-conversation-scroll`, `data-chat-flow`, `data-chat-anchor-key`, `data-chat-turn`, `data-clock` | Scope isolation, navigation and text extraction |
 
+The Workspaces header has no public Slot, so its search button is replaced by a
+DOM entry kept alive with a coalesced `MutationObserver`. This anchor is part of
+the same version-pinned contract as the other `data-*` hooks. `Ctrl/Cmd+K` is
+taken over by a `window` capture listener; the Host dispatches its shortcuts on
+the bubble phase and respects `defaultPrevented`, so other shortcuts and open
+dialogs are unaffected.
+
 ## Verification (2026-11-01)
 
 - `node scripts/build-client.mjs --check`: reproducible bundle from `src/`.
-- `node --test "test/**/*.test.mjs"`: **134 passed, 0 failed**.
+- `node --test "test/**/*.test.mjs"`: **138 passed, 0 failed**.
 - `scripts/check-client-registration.mjs`: the bundle registers
   `@ryuu-64/dsh-find-all`.
 - Production client bundle SHA-256:
-  `b84a1f65c0d760647e1aebfdd3bc0c60d5a4c66eeddb88adba216456fb995c12`.
+  `74ddd8e99857d13a7538b3ac8ea61d0ae9b08f38cdcee2fe6504555fbaf9c5e9`.
 - Isolated official `0.2.1-rc.5` Web profile (`DSH_HOME` under a temporary
   directory, bundled Desktop runtime commit `d4db512`):
-  `dsh plugin --profile web add <candidate.tgz>` installed `0.2.0`, and
+  `dsh plugin --profile web add <candidate.tgz>` installed `0.2.1`, and
   `window.__DSH_BOOT__` listed `@ryuu-64/dsh-find-all`.
 - Real Chrome run on that profile:
-  - the sidebar `对话全文搜索` entry rendered;
-  - searching `FIND_ALL_A_USER_001` returned exactly one conversation with the
-    title and the matching body snippet;
+  - the Workspaces header shows the plugin entry next to the `工作区` label;
+    the Host `搜索会话` button is hidden and the old sidebar-footer entry is
+    gone;
+  - `Ctrl+K` opens the plugin search Modal instead of the Host session search;
+  - clicking the header entry opens the same Modal; searching
+    `FIND_ALL_A_USER_001` returned one conversation with its title and body
+    snippet;
   - opening that result retained the query, opened the conversation and showed
     `1 个结果` in the current-conversation find bar;
+  - in the collapsed rail (55 px sidebar) the entry still renders as a 36×36
+    icon button and `Ctrl+K` still opens the Modal;
   - no console or page errors were recorded.
 - Host route with two synthetic 80-turn sessions: `scanned: 2`,
-  `complete: true`, `failed: 0`, one body match with the exact snippet and
-  UTF-16 range `0–19`.
-- The same route rejects unauthenticated requests and does not enable the
-  optional SQLite full-text index.
+  `complete: true`, `failed: 0`, exact snippet and UTF-16 ranges.
+- `Ctrl/Cmd+K` is ignored while another Host dialog is open, and the hidden Host
+  search input/slot is restored when the plugin is disabled.
 
 ## Unverified boundaries
 
 - Packaged Electron/Tauri installers, Windows registry integration and other
   operating systems were not exercised.
-- Any host other than `0.2.1-rc.5` is unsupported by declaration.
+- Any host other than `0.2.1-rc.5` is unsupported by declaration; the header
+  replacement is explicitly coupled to its DOM.
 - Whole-history navigation beyond the retained-query handoff, default-masked
   secret reveal invalidation, archived-search UI and the plugin-manager
-  disable/enable cycles were not rerun for this cleanup.
+  disable/enable cycles were not rerun for this change.
 - The historical desktop/Windows acceptance harness and its evidence were
   removed with the old host targets; this document is the single current
   record.
