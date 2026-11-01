@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.2
+
+- Fix the Workspaces section label (`工作区`) shifting right after 0.2.1: the plugin now swaps the host search button inside its existing slot instead of hiding the slot, so the header's flex layout is untouched.
+- Keep the entry exactly in the host search icon's box (28×28 wide, 36×36 in the rail) and leave the section label, filter and add-workspace actions in their original positions.
+- Rebuild the bundle (SHA-256 `77f8b97d2dcf20f63d0d2ed05dc07921d14792f19714cf38df6bd6d1493c97c8`); 138 tests pass.
+- Verify on an isolated official `0.2.1-rc.5` Web profile: the label keeps `x=16` with the plugin and with the original host button restored, while `Ctrl+K`, the header entry click and cross-conversation search continue to work.
+- Not verified: packaged Electron/Tauri installers and other host versions.
+
 ## 0.2.1
 
 - Move the full-text conversation search entry from the sidebar footer into the Workspaces section header, replacing the host's session-search button.

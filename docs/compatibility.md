@@ -28,7 +28,7 @@ untested host is treated as unsupported rather than admitted by range.
 | `workspaceRegistry.archivedSessionIds`, `uiWorkspace.unarchiveSession` | Archive exclusion, explicit restore |
 | `conversation.session.header.utilities` | Find button in the Session header |
 | `sidebar.footer.action` | Hidden mount point for the search Modal; no visible footer entry remains |
-| Workspaces section header (`[class*="_sectionHeader"]`, host `搜索会话` / `Search sessions` button) | Replaced in place by the plugin search entry; works in the expanded sidebar and in the collapsed rail |
+| Workspaces section header (`[class*="_sectionHeader"]`, host `搜索会话` / `Search sessions` button) | The host button is swapped inside its existing search slot, so the header layout (label, filter, add-workspace actions) is unchanged; works in the expanded sidebar and in the collapsed rail |
 | Host `session.search` chord (`Ctrl+K` / `Cmd+K`) | Intercepted in the capture phase before the Host bubble handler; opens the plugin search |
 | `ui-primitives` `Modal`, `Button`, `Input`, `Checkbox`, `MarkdownText`, `writeClipboard` | Native controls and renderer-faithful text projection |
 | `uiConversation.userText.createEvaluator()` and the public Slot inspection | Default-masked user text and renderer guard |
@@ -48,15 +48,18 @@ dialogs are unaffected.
 - `scripts/check-client-registration.mjs`: the bundle registers
   `@ryuu-64/dsh-find-all`.
 - Production client bundle SHA-256:
-  `74ddd8e99857d13a7538b3ac8ea61d0ae9b08f38cdcee2fe6504555fbaf9c5e9`.
+  `77f8b97d2dcf20f63d0d2ed05dc07921d14792f19714cf38df6bd6d1493c97c8`.
 - Isolated official `0.2.1-rc.5` Web profile (`DSH_HOME` under a temporary
   directory, bundled Desktop runtime commit `d4db512`):
-  `dsh plugin --profile web add <candidate.tgz>` installed `0.2.1`, and
+  `dsh plugin --profile web add <candidate.tgz>` installed `0.2.2`, and
   `window.__DSH_BOOT__` listed `@ryuu-64/dsh-find-all`.
 - Real Chrome run on that profile:
-  - the Workspaces header shows the plugin entry next to the `工作区` label;
-    the Host `搜索会话` button is hidden and the old sidebar-footer entry is
-    gone;
+  - the Workspaces header shows the plugin entry in the Host search icon's
+    box (28×28); the Host `搜索会话` button is hidden and the old
+    sidebar-footer entry is gone;
+  - the `工作区` label keeps the Host's original position: `x = 16` with the
+    plugin and `x = 16` after temporarily restoring the Host button, so the
+    slot, filter and add-workspace actions do not move;
   - `Ctrl+K` opens the plugin search Modal instead of the Host session search;
   - clicking the header entry opens the same Modal; searching
     `FIND_ALL_A_USER_001` returned one conversation with its title and body
