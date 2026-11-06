@@ -5,7 +5,13 @@
 // position). A coalesced MutationObserver keeps the entry mounted across
 // sidebar re-renders and the rail/wide transition.
 
-const HOST_SEARCH_LABELS = ["搜索会话", "Search sessions"];
+// DSH 0.2.2-rc.1 ships eight UI locales; match every localized label so the
+// header entry still replaces the host button instead of only doing so for
+// Chinese and English.
+const HOST_SEARCH_LABELS = [
+	"搜索会话", "Search sessions", "セッションを検索", "Buscar sesiones",
+	"Rechercher des sessions", "Sitzungen suchen", "Поиск сеансов", "Buscar sessões",
+];
 const ENTRY = "data-find-all-workspace-entry";
 
 const STYLE = [

@@ -5,6 +5,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { chromium } from 'playwright';
 import { seedHistory } from './synthetic-history.mjs';
@@ -16,15 +17,29 @@ import { seedModernProjection } from './modern-projection-fixture.mjs';
 const secrets = new Set();
 const redact = createRedactor(secrets);
 
+// Any modal that survives the inspected first-run prompts covers the plugin
+// surface, so it must fail the acceptance instead of being dismissed blindly.
+async function assertNoUnexpectedDialogs(page) {
+  const names = await page.locator('[role="dialog"]').evaluateAll(elements => elements
+    .filter(element => element.offsetWidth || element.offsetHeight || element.getClientRects().length)
+    .map(element => element.getAttribute('aria-label') || (element.innerText || '').trim().split('\n')[0] || ''));
+  assert.deepEqual(names, [], 'unknown modal dialog after first-run prompts');
+}
+
 const [version, artifactArg, outputArg] = process.argv.slice(2);
 const versions = Object.keys(JSON.parse(fs.readFileSync(new URL('./vendor-versions.json', import.meta.url))));
-assert.ok(versions.includes(version), 'use an explicit acceptance target');
+assert.ok(versions.includes(version), `unsupported acceptance target ${version}; supported: ${versions.join(', ')}`);
 const artifact = path.resolve(artifactArg);
 const output = path.resolve(outputArg);
 fs.mkdirSync(output, { recursive: true });
 const hash = () => createHash('sha256').update(fs.readFileSync(artifact)).digest('hex');
 const artifactSha256 = hash();
-const run = process.env.FIND_ALL_REUSE_RUN ? path.resolve(process.env.FIND_ALL_REUSE_RUN) : fs.mkdtempSync(path.join(process.env.RUNNER_TEMP || '/tmp', 'find-all-web-'));
+// A Unix '/tmp' literal resolves to a nonexistent drive root under Windows
+// Node; os.tmpdir() is the portable fallback when RUNNER_TEMP is unset.
+// Resolve 8.3 short names (Windows temp dirs) to their long form so the
+// seeded session cwd and the Host's process cwd name the same workspace.
+const tempRoot = fs.realpathSync.native(process.env.RUNNER_TEMP || os.tmpdir());
+const run = process.env.FIND_ALL_REUSE_RUN ? path.resolve(process.env.FIND_ALL_REUSE_RUN) : fs.mkdtempSync(path.join(tempRoot, 'find-all-web-'));
 console.log('Isolated acceptance directory:', run);
 const discovery = path.join(run, 'discovery');
 const runtime = path.join(run, 'runtime');
@@ -49,7 +64,7 @@ Object.assign(env, {
   DSH_AGENTS_HOME: path.join(home, '.agents'),
   DSH_BUNDLED_SKILL_DIR: path.join(home, '.bundled-skills'),
   npm_config_ignore_scripts: 'true',
-  npm_config_cache: path.join(process.env.RUNNER_TEMP || '/tmp', 'find-all-registry-cache'),
+  npm_config_cache: path.join(tempRoot, 'find-all-registry-cache'),
   npm_config_registry: 'https://registry.npmjs.org',
   npm_config_userconfig: path.join(home, '.npmrc'),
 });
@@ -125,11 +140,28 @@ for (const name of ['dsh-client-ui-chat', 'dsh-client-ui-conversation', 'dsh-api
 }
 fs.writeFileSync(path.join(output, 'host-versions.json'), JSON.stringify(observed, null, 2));
 const bin = runtimeRequire.resolve('@deepseek-ai/dsh/package.json').replace(/package.json$/, 'lib/bin.js');
+// The profile manifest's pnpm-workspace.yaml makes the profile its own
+// workspace root, so adding the candidate there needs pnpm's -w flag. Without
+// it pnpm 9 refuses the install (ERR_PNPM_ADDING_TO_ROOT), and whether it
+// refuses depends on the cwd's 8.3/long path form on Windows.
 const installLog = fs.openSync(path.join(output, 'plugin-install.log'), 'w');
 try {
-  execFileSync(process.execPath, [bin, 'plugin', '--profile', 'web', 'add', artifact, '--ignore-scripts'], { cwd: runtime, env, stdio: ['ignore', installLog, installLog], timeout: 300_000 });
+  execFileSync(process.execPath, [bin, 'plugin', '--profile', 'web', 'add', artifact, '--ignore-scripts', '-w'], { cwd: runtime, env, stdio: ['ignore', installLog, installLog], timeout: 300_000 });
 } finally { fs.closeSync(installLog); }
 assert.equal(hash(), artifactSha256);
+// 0.2.2-rc.1 limitation: a fresh CLI-started Web profile cannot persist the
+// Preview Notice acknowledgement (POST /api/settings/mutate answers
+// settings/rejected: "profile reload requires the root Include entry"), so the
+// modal never closes by itself. Seed the exact notice version into this
+// throwaway profile's own patch layer before the Host starts. This is
+// environment setup for the isolated acceptance profile only (never a user
+// profile) and not plugin behavior; the first-run block below still exercises
+// a Host that shows the notice when the seed did not take effect.
+const profilePatch = path.join(home, '.dsh', 'profiles', 'web', 'cordis.patch.yml');
+assert.ok(fs.existsSync(profilePatch), 'the initialized profile patch layer must exist before the notice seed');
+const profilePatchHeader = '# Your patch layer for this dsh profile, applied after every bundle layer:\n# a top-level YAML array of loader patch entries (id-targeted config\n# overrides, disables, and insert lists; `!!js` expressions allowed).\n';
+fs.writeFileSync(profilePatch, `${profilePatchHeader}- id: ui-settings-general\n  config:\n    welcomeNoticeVersion: "2026-09-28.1"\n`);
+assert.ok(fs.readFileSync(profilePatch, 'utf8').includes('welcomeNoticeVersion'), 'isolated profile notice seed');
 let seeded;
 if (full) {
   seeded = await seedHistory(runtimeRequire, home, workspace);
@@ -198,20 +230,31 @@ try {
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(url, { waitUntil: 'load' });
   await page.locator('style[data-plugin-css="dsh-find-all/bar.css"]').waitFor({ state: 'attached', timeout: 30_000 });
-  // Fresh official profiles show this non-binding preview notice.
-  const notice = page.getByText(/^(Internal Testing Notice|Preview Notice)$/);
-  await notice.waitFor({ state: 'visible', timeout: 30_000 });
-  await page.getByRole('button', { name: 'Continue', exact: true }).click();
-  await notice.waitFor({ state: 'hidden' });
-  // The rc.3/rc.5 native-browser observation exposes a Get started dialog
-  // with Close, Add API Key and Sign in. Close is its explicit no-account
-  // path; do not click either credential action or invent Configure later
-  // there.
+  // Fresh official profiles normally carry this non-binding preview notice,
+  // and 0.2.2-rc.1 has only the "Preview Notice" copy (the older "Internal
+  // Testing Notice" title no longer exists, so it is not accepted here). The
+  // isolated profile was pre-acknowledged above; if a Host still shows the
+  // notice, dismissing it through Continue and its persisted acknowledgement
+  // is mandatory rather than skipped.
+  const notice = page.getByText(/^Preview Notice$/);
+  const noticeShown = await notice.waitFor({ state: 'visible', timeout: 5_000 }).then(() => true, () => false);
+  if (noticeShown) {
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    await notice.waitFor({ state: 'hidden', timeout: 30_000 });
+  }
+  // A fresh 0.2.2-rc.1 Web profile shows the "Get started" sign-in dialog once
+  // the notice is gone. Close is its explicit no-account path; never click Add
+  // API Key or Sign in. Its absence is tolerated and recorded, and any other
+  // modal that survives the known first-run prompts fails loudly below.
   const onboarding = page.getByRole('dialog', { name: 'Get started', exact: true });
   const deferSetup = onboarding.getByRole('button', { name: 'Close', exact: true });
-  await deferSetup.waitFor({ state: 'visible', timeout: 30_000 });
-  await deferSetup.click();
-  await onboarding.waitFor({ state: 'hidden' });
+  const signInDialog = await deferSetup.waitFor({ state: 'visible', timeout: 5_000 }).then(() => 'closed', () => 'absent');
+  if (signInDialog === 'closed') {
+    await deferSetup.click();
+    await onboarding.waitFor({ state: 'hidden' });
+  }
+  report.firstRun = { notice: noticeShown ? 'dismissed' : 'pre-acknowledged', signInDialog };
+  await assertNoUnexpectedDialogs(page);
   // Handle only the already inspected, non-binding prompts if a legacy reload
   // presents them again. Unknown agreements or permission prompts still fail.
   await page.addLocatorHandler(notice, async () => {
@@ -219,18 +262,42 @@ try {
     await page.getByRole('button', { name: 'Continue', exact: true }).click();
   });
   await page.addLocatorHandler(deferSetup, async () => { await deferSetup.click(); });
+  // 0.2.2-rc.1 opens a blank New Session on a seeded profile, and its new-session
+  // surface exposes no conversation frame for the find bar to anchor to, so open
+  // a seeded conversation through the ordinary sidebar row first. The
+  // empty-profile bootstrap below still covers a profile with no history.
+  if (full) {
+    const seededRow = page.locator('[data-row-key="session:find-all-synthetic-a"]');
+    await seededRow.waitFor({ state: 'visible', timeout: 30_000 });
+    await seededRow.click();
+    await page.locator('[data-find-all-session="find-all-synthetic-a"]').waitFor({ state: 'visible', timeout: 30_000 });
+    await page.locator('[data-chat-flow]').waitFor({ state: 'visible', timeout: 30_000 });
+    await page.locator('[data-chat-flow]').getByText('FIND_ALL_A_USER_080 synthetic user', { exact: true }).waitFor({ state: 'visible', timeout: 30_000 });
+  }
   await page.keyboard.press('Control+f');
   const bar = page.locator('#dsh-find-all-root');
   await bar.waitFor({ state: 'visible', timeout: 30_000 });
-  // Keep bootstrap read-only with respect to history, including seeded runs.
-  // Empty sessions require no history read in either mode. Keep modern
-  // whole-history default rather than relying on the removed legacy scope chip.
+  // Keep bootstrap read-only with respect to history. An open seeded
+  // conversation exercises the modern whole-history default; an empty profile
+  // must explain why find is unavailable. Keep the whole-history default rather
+  // than relying on the removed legacy scope chip.
   await bar.locator('input.query').fill('FIND_ALL_EMPTY_PROFILE_NEEDLE');
-  await page.waitForTimeout(400);
-  assert.ok(['No results', 'Unavailable'].includes(await bar.locator('.count:visible').innerText()));
+  // The whole-history default scans the open conversation asynchronously
+  // ("Searching the whole conversation…"), so wait for the settled count
+  // instead of sampling one fixed delay. An empty profile settles immediately.
+  let bootstrapCount = '';
+  for (let elapsed = 0; elapsed < 120; elapsed++) {
+    bootstrapCount = await bar.locator('.count:visible').innerText().catch(() => '');
+    if (['No results', 'Unavailable'].includes(bootstrapCount)) break;
+    await page.waitForTimeout(500);
+  }
+  assert.ok(['No results', 'Unavailable'].includes(bootstrapCount), `bootstrap find count settled: ${JSON.stringify(bootstrapCount)}`);
+  report.bootstrapCount = bootstrapCount;
+  report.bootstrapSurface = full ? 'seeded-conversation' : 'empty-profile';
   report.initialSessionViews = await page.locator('[data-find-all-session]').count();
+  if (full) assert.ok(report.initialSessionViews >= 1, 'an open conversation must expose the find entry');
   if (report.initialSessionViews === 0) assert.ok((await bar.locator('.status').innerText()).length > 0, 'empty session must explain why find is unavailable');
-  await captureSafePage(page, path.join(output, 'empty-session-find'), secrets, redact);
+  await captureSafePage(page, path.join(output, 'bootstrap-find'), secrets, redact);
   await page.keyboard.press('Escape');
   await bar.waitFor({ state: 'hidden' });
   assert.equal(await page.evaluate(() => CSS.highlights?.has('dsh-find-all-hit') || false), false);

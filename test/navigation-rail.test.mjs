@@ -34,3 +34,14 @@ test('visible rail without exact mounted control retains absent-control fallback
  const {target,store}=fixture('<nav aria-label="Turn navigation"><button data-index="1" aria-label="Jump to turn 2"></button></nav>');
  assert.equal(activate(target,store,'1',true),null);
 });
+test('localized 0.2.2.1 host rail labels still hand off to the exact loaded turn',()=>{
+ for(const [nav,jump] of [['ターン移動','ターン 1 へ移動'],['Rundennavigation','Zu Runde 1 springen'],['Навигация по ходам','Перейти к ходу 1'],['Navegação entre turnos','Ir para o turno 1']]){
+  const {doc,target,store}=fixture(`<nav aria-label="${nav}"><button data-index="0" aria-label="${jump}"></button></nav>`);
+  let clicks=0;doc.querySelector('button').onclick=()=>clicks++;
+  assert.equal(activate(target,store,'1',true),true);assert.equal(clicks,1);
+ }
+});
+test('localized load-and-jump labels never count as exact loaded turns',()=>{
+ const {target}=fixture('<nav aria-label="Rundennavigation"><button data-index="0" aria-label="Runde 1 laden und öffnen"></button></nav>');
+ assert.equal(activate(target,{get:key=>key==='row'},'1',true),null);
+});

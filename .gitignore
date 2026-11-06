@@ -5,3 +5,6 @@ node_modules/
 
 # Acceptance profiles/reports may contain transient local authentication URLs.
 evidence/
+
+# Compatibility research scratch (not shipped).
+_compat-scratch/

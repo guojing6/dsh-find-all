@@ -676,11 +676,26 @@ var BAR_ID = "dsh-find-all-root";
         // from a present but unusable control or unknown adapter structure (false).
 		function activateLoadedTurn(target, store, preferredTurn, exactOnly) {
 			if (!store) return false;
+			// DSH 0.2.2-rc.1 ships eight host UI locales. Keep the localized rail
+			// and exact-turn labels local so this function stays self-contained.
+			var navigationLabels = ['轮次导航', 'Turn navigation', 'ターン移動', 'Navegación por turnos', 'Navigation entre les tours', 'Rundennavigation', 'Навигация по ходам', 'Navegação entre turnos'];
+			var jumpLabels = [
+				/^跳转到第 (\d+) 轮$/, /^Jump to turn (\d+)$/, /^ターン (\d+) へ移動$/,
+				/^Ir al turno (\d+)$/, /^Aller au tour (\d+)$/, /^Zu Runde (\d+) springen$/,
+				/^Перейти к ходу (\d+)$/, /^Ir para o turno (\d+)$/,
+			];
+			function jumpTurnNumber(label) {
+				for (var i = 0; i < jumpLabels.length; i++) {
+					var matched = jumpLabels[i].exec(label || '');
+					if (matched) return matched[1];
+				}
+				return null;
+			}
 			var list = target.root.parentElement, chat = list && list.parentElement, frame = chat && chat.parentElement;
 			if (!frame || !target.panel.contains(frame)) return false;
 			var navs = Array.prototype.filter.call(frame.querySelectorAll('nav'), function (nav) {
 				var label = nav.getAttribute('aria-label');
-				return !target.root.contains(nav) && (label === 'Turn navigation' || label === '轮次导航');
+				return !target.root.contains(nav) && navigationLabels.indexOf(label) >= 0;
 			});
 			if (!navs.length) return exactOnly ? null : false;
 			if (navs.length !== 1) return false;
@@ -698,8 +713,7 @@ var BAR_ID = "dsh-find-all-root";
 			Array.prototype.forEach.call(navs[0].querySelectorAll('button[data-index]'), function (button) {
 				// These exact loaded labels are locale-owned by the inspected host.
 				// The distinct "Load and jump" labels must never be activated here.
-				var match = /^(?:Jump to turn (\d+)|跳转到第 (\d+) 轮)$/.exec(button.getAttribute('aria-label') || '');
-				var turn = match && (match[1] || match[2]);
+				var turn = jumpTurnNumber(button.getAttribute('aria-label'));
 				if (turn === preferredTurn) exactMounted = true;
 				if (!turn || (exactOnly && turn !== preferredTurn) || !loaded.has(turn) || button.disabled || button.getAttribute('aria-busy') === 'true' || !visible(button)) return;
 				candidates.push({ button: button, rank: turn === preferredTurn ? 0 : button.getAttribute('aria-current') === 'true' ? 1 : 2 });

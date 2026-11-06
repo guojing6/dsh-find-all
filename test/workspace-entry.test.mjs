@@ -111,3 +111,16 @@ test("installer redirects a host-expanded search observed after mount", async ()
   assert.equal(opened, 1);
   stop();
 });
+
+test("every 0.2.2-rc.1 host locale replaces the search button, not just zh/en", async () => {
+  const { document } = new JSDOM("<!doctype html><body></body>").window;
+  const stop = installWorkspaceEntry(document, () => {}, "对话全文搜索");
+  const labels = ["セッションを検索", "Buscar sesiones", "Rechercher des sessions", "Sitzungen suchen", "Поиск сеансов", "Buscar sessões"];
+  const headers = labels.map((label) => addHeader(document, label));
+  await tick();
+  assert.equal(document.querySelectorAll("[data-find-all-workspace-entry]").length, labels.length);
+  for (let index = 0; index < headers.length; index += 1) {
+    assert.equal(headers[index].querySelector(`button[aria-label="${labels[index]}"]`).style.display, "none");
+  }
+  stop();
+});

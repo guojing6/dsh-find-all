@@ -1,7 +1,7 @@
 import { prepareContext, finishContext, projectInboxSplice, createContextClassifier } from "./context.js";
 
-// Durable full-history reader for the supported official DSH protocol (0.2.1-rc.5).
-// Reference: deepseek-harness 639ed015397290b3745d163aafe02ffee4aa3f84.
+// Durable full-history reader for the supported official DSH protocol (0.2.2-rc.1).
+// Reference: deepseek-harness c59d10aff167ad7eefead4b3a9082fb57c8fbfe8.
 // This cache belongs to ONE session + generation. It never owns a query, a DOM
 // window, or the model's compacted surface. Only append-origin transcript text
 // and the small amount of identity/presentation data needed to find it survive.

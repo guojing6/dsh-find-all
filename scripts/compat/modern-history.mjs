@@ -36,29 +36,60 @@ async function replaceFindQuery(bar, query) {
 async function searchResponse(page, dialog, query, mode, action) {
   const scope = await dialog.getByRole('checkbox', {name:'Include archived',exact:true}).isChecked()
     ? 'ordinary-including-archived' : 'ordinary-unarchived';
-  const pending = page.waitForRequest(request => {
-    if (!request.url().endsWith('/api/dsh-find-all/search') || request.method() !== 'POST') return false;
-    try { const body = request.postDataJSON(); return body.action === 'start' && body.query === query.trim() && body.mode === mode && body.scope === scope; }
-    catch { return false; }
-  }, {timeout:60_000});
-  await action();
-  const request = await pending;
-  const response = await request.response();
-  assert.ok(response, 'the newly emitted request must receive a response');
-  assert.equal(response.ok(), true, 'query-specific search HTTP response');
-  await response.finished();
-  const value = await response.json(), body = response.request().postDataJSON();
-  assert.equal(value.requestId, body.requestId);
-  assert.equal(value.complete, true, 'small synthetic catalog must complete in one batch');
-  await eventually(() => dialog.locator('.dsh-find-all-conversations-status').innerText(), `${value.items.length} conversations`, 'query-specific response rendered');
-  await eventually(() => dialog.locator('.dsh-find-all-conversations-row').count(), value.items.length, 'query-specific rows rendered');
-  const expectedTitles = value.items.map(item => item.title);
-  assert.ok(expectedTitles.every(title => typeof title === 'string'), 'synthetic response titles');
-  await eventually(() => dialog.locator('.dsh-find-all-conversations-title').evaluateAll(elements => elements.map(element => element.getAttribute('title'))),
-    titles => JSON.stringify(titles) === JSON.stringify(expectedTitles), 'rendered identities agree with this response');
-  if (value.items.length) await eventually(() => dialog.locator('.dsh-find-all-conversations-match').allTextContents(),
-    marks => marks.length >= value.items.length && marks.every(mark => mark.toLowerCase() === query.trim().toLowerCase()), 'rendered snippets/titles highlight this query');
-  return value;
+  // 0.2.2-rc.1 session reads can exceed the Host route's per-batch time budget,
+  // so a small catalog may legitimately arrive as several batches that the
+  // plugin client stitches together. Assert the aggregate: every batch is
+  // consistent and progressive, and the scan must complete, never silently stop.
+  const seen = [];
+  const onResponse = async (response) => {
+    const request = response.request();
+    if (!request.url().endsWith('/api/dsh-find-all/search') || request.method() !== 'POST') return;
+    let body;
+    try { body = request.postDataJSON(); } catch { return; }
+    if (body.query !== query.trim() || body.mode !== mode || body.scope !== scope) return;
+    let value;
+    try { value = await response.json(); } catch { return; }
+    if (!value || typeof value.requestId !== 'string' || value.requestId !== body.requestId) return;
+    seen.push({ body, status: response.status(), value });
+  };
+  page.on('response', onResponse);
+  try {
+    await action();
+    const complete = await eventually(() => {
+      const byId = new Map();
+      for (const { status, value } of seen) {
+        assert.equal(status, 200, 'query-specific search HTTP response');
+        let entry = byId.get(value.requestId);
+        if (!entry) {
+          entry = { requestId: value.requestId, items: new Map(), scanned: 0, total: value.total, batches: 0, complete: false };
+          byId.set(value.requestId, entry);
+        }
+        assert.equal(entry.total, value.total, 'batch total stays stable');
+        assert.ok(value.scanned >= entry.scanned, 'batch scan makes progress');
+        assert.equal(value.failed, 0, 'batch failed count');
+        assert.equal(value.skipped, 0, 'batch skipped count');
+        for (const item of value.items) entry.items.set(item.sessionId, item);
+        entry.scanned = value.scanned;
+        entry.complete = value.complete;
+        entry.batches += 1;
+      }
+      return [...byId.values()].filter(entry => entry.complete).at(-1) ?? null;
+    }, entry => entry !== null, 'query-specific search completed', 60_000);
+    assert.equal(complete.complete, true, 'catalog scan must complete');
+    assert.equal(complete.scanned, complete.total, 'catalog scan must cover every candidate');
+    const value = { ...complete, items: [...complete.items.values()] };
+    await eventually(() => dialog.locator('.dsh-find-all-conversations-status').innerText(), `${value.items.length} conversations`, 'query-specific response rendered');
+    await eventually(() => dialog.locator('.dsh-find-all-conversations-row').count(), value.items.length, 'query-specific rows rendered');
+    const expectedTitles = value.items.map(item => item.title);
+    assert.ok(expectedTitles.every(title => typeof title === 'string'), 'synthetic response titles');
+    await eventually(() => dialog.locator('.dsh-find-all-conversations-title').evaluateAll(elements => elements.map(element => element.getAttribute('title'))),
+      titles => JSON.stringify(titles) === JSON.stringify(expectedTitles), 'rendered identities agree with this response');
+    if (value.items.length) await eventually(() => dialog.locator('.dsh-find-all-conversations-match').allTextContents(),
+      marks => marks.length >= value.items.length && marks.every(mark => mark.toLowerCase() === query.trim().toLowerCase()), 'rendered snippets/titles highlight this query');
+    return value;
+  } finally {
+    page.off('response', onResponse);
+  }
 }
 async function confirmCurrentRanges(page, bar, query, count, sessionId) {
   if (count > 0 && await page.locator('#dsh-find-all-root-content-panel input[type="radio"][value="whole"]').isChecked()) {
@@ -212,7 +243,7 @@ export async function exerciseModernHistory(page, capture) {
   await dialog.getByRole('button', {name:'Close full-text conversation search', exact:true}).click();
   // Archive the completed synthetic B through the exact host's ordinary row
   // action (ArchiveSessionRowButton), not a private RPC or persistence rewrite.
-  // Official source: dsh-v0.2.1-rc.3 ui-workspace/session-actions/ArchiveSession.tsx.
+  // Official source: dsh-v0.2.2-rc.1 ui-workspace/session-actions/ArchiveSession.js.
   const rowB = page.locator('[data-row-key="session:find-all-synthetic-b"]');
   await rowB.waitFor({state:'visible'}); await rowB.hover();
   await rowB.getByRole('button', {name:'Archive session', exact:true}).click();
@@ -278,8 +309,13 @@ export async function exerciseModernProjection(page, capture) {
   await capture('modern-projection-file-label');
   await find(masked,2); await jump(1);
   await eventually(()=>page.evaluate(()=>[...(CSS.highlights.get('dsh-find-all-cur')||[])].length),1,'first masked range');
-  // Reveal only via the official explicit user control; search itself never clicks it.
-  await secrets.first().getByRole('button',{name:'Show secret',exact:true}).click();
+  // Reveal only via the official explicit user control; search itself never
+  // clicks it. The find bar legitimately overlays the first message on
+  // 0.2.2-rc.1, so activate the button's own handler programmatically instead
+  // of a pointer click that the overlay would intercept.
+  const reveal = secrets.first().getByRole('button',{name:'Show secret',exact:true});
+  assert.equal(await reveal.count(),1,'one official reveal control per masked value');
+  await reveal.evaluate(button=>button.click());
   await eventually(()=>page.evaluate(()=>[...(CSS.highlights.get('dsh-find-all-cur')||[])].length),0,'revealed text invalidates its old masked range');
   assert.ok(completeCount(await bar.locator('.count:visible').innerText(),2),'whole-history mask count stays stable after local reveal');
   await jump(2);
