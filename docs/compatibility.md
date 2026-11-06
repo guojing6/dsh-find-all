@@ -59,11 +59,16 @@ deliberately never activates the localized "load and jump" labels.
   `@guojing6/dsh-find-all`.
 - Production client bundle SHA-256:
   `5e864fcfa797e42f84fc22fb4c829923cbe6e72c7b8645943f4d77d96efb423e`; the
-  copy inside the candidate tarball is byte-identical. This hash is unchanged
-  by packaging: a final repack only refreshed the bundled Markdown documents.
-- Candidate tarball `dist/guojing6-dsh-find-all-0.4.0.tgz` SHA-256:
+  copy inside the acceptance candidate tarball is byte-identical.
+- Acceptance candidate tarball SHA-256:
   `ceab127ec3cac4c348a1e9fe0c25cc5702343afd216bc7b9ac49d95c89f059e7`, the same
-  `artifactSha256` the accepted run recorded.
+  `artifactSha256` the accepted run recorded. A final repack changed only the
+  bundled Markdown documents; the client bundle above did not change.
+- Published npm artefact `@guojing6/dsh-find-all@0.4.0` (dist-tag `latest`,
+  integrity
+  `sha512-rfDrziy8JCTwgcnW7rdLlOlqMi1A+8WcFtKWxDyiuiI7qaRpVUUegex0X2YtlvJFm499FkgPuD1JmjR6vF6H6A==`):
+  tarball SHA-256
+  `56f23dab5c999a6bb9360ca9062b60e9af619d9809e6c187b9e9ceca710cd318`.
 - Isolated official host graph (`HOME`/`DSH_HOME` under a temporary directory,
   never the user profile): public-registry `@deepseek-ai/dsh@0.2.2-rc.1` with
   652 packages, all required host packages at `0.2.2-rc.1`. The vendor pins
@@ -90,9 +95,9 @@ deliberately never activates the localized "load and jump" labels.
 
 ### Whole-history search acceptance
 
-- Artifact match: the tarball SHA-256 above equals `result.json`'s
-  `artifactSha256`, and `lib/client.js` inside it is byte-identical to the
-  built bundle.
+- Artifact match: the acceptance candidate tarball SHA-256 above equals
+  `result.json`'s `artifactSha256`, and `lib/client.js` inside it is
+  byte-identical to the built bundle and to the published npm artefact.
 - Stages, all passed: install plus version-drift and required-host-package
   assertions; first-run prompts (notice pre-acknowledged, sign-in dialog
   closed through its own Close action); bootstrap (`seeded-conversation`,
